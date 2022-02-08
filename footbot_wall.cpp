@@ -21,6 +21,7 @@ CFootBotWall::CFootBotWall() : // initializer list
    m_cGoStraightAngleRange(-ToRadians(m_cAlpha),
                            ToRadians(m_cAlpha)) {}
 
+
 void CFootBotWall::Init(TConfigurationNode& t_node) {
    
    //Sensors & Actuators
@@ -33,6 +34,7 @@ void CFootBotWall::Init(TConfigurationNode& t_node) {
    m_pcProximity  = GetSensor<CCI_FootBotProximitySensor>("footbot_proximity");
    m_pcRangeAndBearingS = GetSensor<CCI_RangeAndBearingSensor>("range_and_bearing");
    m_pcPositioning = GetSensor<CCI_PositioningSensor>("positioning");
+
 
    
    //Parse the configuration file
@@ -55,8 +57,8 @@ void CFootBotWall::Init(TConfigurationNode& t_node) {
                            {'C',{0,0,0,2}},
                            {'G',{0,1,2,0}},
                            {'I',{0,4,0,0}}};
-
 }
+
 
 Real CFootBotWall::EucDistance(std::array<int,4> u, std::array<int,4> v){
    Real euc_distance = 0.0;
@@ -181,8 +183,6 @@ std::pair<CRadians,Real> CFootBotWall::getMinReading(char sector_lbl){
 }
 
 
-
-
 std::array<int,4> CFootBotWall::extractFeatures(){
    int n_feature_interval = 8;
    CRadians aperture;
@@ -258,149 +258,41 @@ char CFootBotWall::predict(std::array<int,4> feature){
 
 
 std::array<Real,2> CFootBotWall::StructuredExploration(
-   Real r_distance_d,
-   CRadians r_orientation_d,
-   const CCI_RangeAndBearingSensor::TReadings& rab_readings){
+   const CCI_RangeAndBearingSensor::TReadings& rab_readings,
+   std::map<CRadians, struct angle_data> world_model_long,
+   char zone,
+   const CCI_PositioningSensor::SReading& robot_state){
 
-   Real v, w; // linear velocity (x_component) & angular velocity (z_component)
-   
-   //Wall Following-----------------------------------------
-   Real v_wf, w_wf, w_dis, w_ori;
-   Real distance_error, orientation_error;
-   Real L = 14.0; // wheels distance [cm] 
+   Real v, w;
 
-   struct angle_data min = {CRadians::ZERO, 150.0, 0, false};
-   for(auto r : sectorLbl_to_sectorData['R'].readings){
-      if (!r.occluded){
-         if (r.distance <= min.distance){
-            min.distance = r.distance;
-            min.angle = r.angle;
-         }  
-      }
-   }
+   std::array<Real, 2> input_wf = {0.0, 0.0};
+   std::array<Real, 2> input_oa = {0.0, 0.0};
+   std::array<Real, 2> input_c = {0.0, 0.0};
 
-   this->free_min = min;
+   //std::cout << (CVector2(robot_state.Position.GetX(), robot_state.Position.GetY()) - this->goal_state).Length() << "\n";
 
-   // angular velocity wf proportional to distance error + orientation error
-   w_wf = 0.01*(r_distance_d - min.distance) + (-(r_orientation_d - min.angle).SignedNormalize().GetValue());
-
-   // linear velocity wf base + linearly ramping down to 0 component (Arrival)
-   v_wf = 2.0 + 5.0*(getMinReading('F').second - r_distance_d)/(150.0 - r_distance_d);
-
-
-   //Obstacle Avoidance--------------------------------------
-   Real center_center_distance = 17.0; //cm distanza tra i centri di due footbot attaccati
-   Real alpha_max = 30.0; //cm
-   Real w_oa;
-   CVector2 ahead = CVector2(1.0,0.0) * alpha_max;
-   CVector2 rab_xy, nearest_robot_xy;
-   std::vector<CCI_RangeAndBearingSensor::SPacket> in_rectangle_robots;
-
-   for(auto rr : rab_readings){
-      rab_xy.FromPolarCoordinates(rr.Range - center_center_distance, rr.HorizontalBearing);
-      if(rab_xy.GetX() > 0.0 and rab_xy.GetX() <= ahead.GetX() and abs(rab_xy.GetY()) <= center_center_distance/2){
-         in_rectangle_robots.push_back(rr);
-      }
-      
-   }
-
-   Real nearest_robot_range = CVector2(ahead.GetX(), center_center_distance/2).Length();
-   CRadians nearest_robot_angle;
-   for(auto irr : in_rectangle_robots){
-      if(irr.Range <= nearest_robot_range){
-         nearest_robot_range = irr.Range;
-         nearest_robot_angle = irr.HorizontalBearing;
-      }
-   }
-
-   nearest_robot_xy.FromPolarCoordinates(nearest_robot_range - center_center_distance, nearest_robot_angle);
-   //this->nearest_robot_xy = nearest_robot_xy;
-
-   // angular velocity oa
-   w_oa = (ahead + CVector2(0.0, -nearest_robot_xy.GetY())).Angle().GetValue();
-
-
-   //Combination
-   v = v_wf;
-   w = w_wf;
-
-   return {v - w*L/2, v + w*L/2};
-
-}
-
-
-
-std::array<Real,2> CFootBotWall::UnstructuredExploration(
-   const CCI_FootBotProximitySensor::TReadings& proximity_readings){
-
-   /* Sum them together */
-   Real v_l, v_r;
-   CVector2 cAccumulator;
-
-   for(int i = 0; i < proximity_readings.size(); ++i) 
-      cAccumulator += CVector2(proximity_readings[i].Value, proximity_readings[i].Angle);
-   
-   cAccumulator /= proximity_readings.size();
-   
-
-   if (cAccumulator.Length() == 0.0){
-      if(tic % 30 == 0 || chosen){
-         
-         if (!chosen){
-            std::random_device rd;
-            std::default_random_engine eng(rd());
-            std::uniform_real_distribution<float> distr(0, 1);
-            
-            if (distr(eng) >= 0.5)
-               choice = 0;
-            else
-               choice = 1;
-
-            chosen = true;
-         }
-
-         if (counter < 10){
-            if (choice == 0){
-               v_l = 2.0;
-               v_r = -2.0;
-            }
-            else{
-               v_l = -2.0;
-               v_r = 2.0;
-            }
-         counter++;
-         }
-         
-         else{
-            counter = 0;
-            chosen = false;
-         }
-         
-      }
-      else{
-         v_l = 5.0;
-         v_r = 5.0;
-      }
+   if((CVector2(robot_state.Position.GetX(), robot_state.Position.GetY()) - this->goal_state).Length() > 0.5 && this->manouvering == true){
+      //std::cout << "Crossing\n";
+      input_c = Crossing(robot_state, this->world_model_long, this->goal_state);
+      input_oa = ObstacleAvoidance(rab_readings);
    }
    else{
-      if(m_cGoStraightAngleRange.WithinMinBoundIncludedMaxBoundIncluded(cAccumulator.Angle())) {
-         if(cAccumulator.Angle().GetValue() > 0.0f) {
-            v_l = 2.0;
-            v_r = 0.0;
-         }
-         else {
-            v_l = 0.0;
-            v_r = 2.0;
-         }
-      }
-      else{
-         v_l = 5.0;
-         v_r = 5.0;
-      }
+      //std::cout << "WallFollowing\n";
+      this->manouvering = false;
+      input_wf = WallFollowing(world_model_long);
    }
 
+   //Combination
+   v = input_wf[0] + input_c[0] + input_oa[0];
 
-   return {v_l, v_r};
+   if(input_oa[1] != 0.0)
+     input_c[1] = 0.0;
+
+   w = input_wf[1] + input_c[1] + input_oa[1];
+
+   fprintf(stderr, "ID %s  --- WF %f %f - OA %f %f - C %f %f\n", GetId().c_str(), input_wf[0], input_wf[1], input_oa[0], input_oa[1], input_c[0], input_c[1]);
+
+   return {v, w};
 
 }
 
@@ -426,9 +318,10 @@ void CFootBotWall::ControlStep() {
    CVector2 rab_xy, shift_xy;
    CRadians start, end, delta;
    Real fb_radius = 12.0f;
+
    for (const auto& [angle, distance] : long_readings){
       mod_distance = distance;
-      if (mod_distance == -1) mod_distance = 20.0f;
+      if (mod_distance == -1) mod_distance = 10.0f;
       if (mod_distance == -2) mod_distance = 150.0f;
 
       world_model_long[angle] = {angle, mod_distance, tic, false};
@@ -458,7 +351,6 @@ void CFootBotWall::ControlStep() {
       world_model_short[angle] = {angle,mod_distance,tic};
    }
 
-
    // add the readings to the opportune sector based on the sector angle_interval
    for (const auto& [angle, angleData] : world_model_long){
       for (const auto& [sectorLbl, sectorData] : sectorLbl_to_sectorData){
@@ -471,39 +363,32 @@ void CFootBotWall::ControlStep() {
 
    processReadings('H');
 
-
    tic++;
 
-
-   if(tic%10 == 0){
-      // std::cout << "STORE\n";
-      // std::cout << tic << "\n";
-      // std::cout << dataset_step_data.size() << "\n";
-      // std::cout << world_model_long.size() << "\n";
-      // lmr_new.clear();
-      // lMr.clear(); 
-      // getLocalMinMaxReadings();
+   // predict zone
+   char zone = s.predict(robot_state);
 
 
-      // std::cout << "CANCELLA\n";
-      // world_model_long.clear();
-      // world_model_short.clear();
-   
-   }
+   // set crossing goal
+   if (this->manouvering == false)
+      std::tie(this->goal_state, this->manouvering) = s.getGoal(robot_state, this->zone_old, zone);
 
-   
+   //std::cout << this->goal_state << "\n";
 
-
+  
    // compute the inputs
-   auto input = StructuredExploration(35.0, -CRadians::PI_OVER_TWO, rab_readings);
+   //auto input = ObstacleAvoidance(rab_readings);
+   //auto input = WallFollowing(world_model_long);
+   auto input = StructuredExploration(rab_readings, world_model_long, zone, robot_state);
 
-   // Real INTERWHEEL_DISTANCE = 0.14f*100;
+   //input[1] = 0.0;
 
-   // std::cout << "v: " << (input[0]+input[1]) * 0.5 << "\n";
-   // std::cout << "w: " << (input[1]-input[0]) * 1/INTERWHEEL_DISTANCE << "\n";
-      
+   //fprintf(stderr, "%s -- %f - %f \n", GetId().c_str(), input[0], input[1]);
+
    // set the inputs
-   m_pcWheels->SetLinearVelocity(input[0], input[1]);
+   m_pcWheels->SetLinearVelocity(input[0]-input[1]*L/2, input[0]+input[1]*L/2);
+
+   this->zone_old = zone;
    
 
    // store step_data in step_data_dataset
@@ -526,7 +411,7 @@ void CFootBotWall::ControlStep() {
    //dump the dataset into a .csv
    if(tic%100 == 0 && GetId() == "fb_0"){
 
-      std::cout << "DUMPED\n";
+      //std::cout << "DUMPED\n";
       
       std::ofstream file;
       file.open("test_unstructured_1.csv", std::ios_base::app);
@@ -561,8 +446,6 @@ void CFootBotWall::ControlStep() {
 
       dataset_step_data.clear();
    }
-
-  
 
 }
 

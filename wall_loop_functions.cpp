@@ -12,13 +12,25 @@ void CWallLoopFunctions::Init(TConfigurationNode& t_tree){
     // pcFB = dynamic_cast<CFootBotEntity&> (GetSpace().GetEntity("fb_0"));
 
     CFootBotEntity* pcFB;
-    for(int i=0;i<3;i++){
-        pcFB = new CFootBotEntity("fb_"+std::to_string(i), "fwc", CVector3(0.5,i*(0.17+0.07),0), CQuaternion(CRadians::PI_OVER_TWO, CVector3(0,0,1)));
+//    for(int i=0;i<5;i++){
+//        pcFB = new CFootBotEntity("fb_"+std::to_string(i), "fwc", CVector3(-i/3.0-2.0,2.3,0), CQuaternion(CRadians::ZERO, CVector3(0,0,1)));
+//        AddEntity(*pcFB);
+//    }
+//
+//    for(int i=0;i<5;i++){
+//        pcFB = new CFootBotEntity("fb_1"+std::to_string(i), "fwc", CVector3(i/3.0+2.0,3.2,0), CQuaternion(-CRadians::PI, CVector3(0,0,1)));
+//        AddEntity(*pcFB);
+//    }
+
+    for(int i=0;i<20;i++){
+        pcFB = new CFootBotEntity("fb_"+std::to_string(i), "fwc", CVector3(0.3,i/3.0,0), CQuaternion(CRadians::PI_OVER_TWO, CVector3(0,0,1)));
         AddEntity(*pcFB);
     }
     
-    // pcFB = new CFootBotEntity("fb_3", "fwc", CVector3(-0.2,0.34,0), CQuaternion(CRadians::PI_OVER_TWO, CVector3(0,0,1)));
-    // AddEntity(*pcFB);    
+//    pcFB = new CFootBotEntity("fb_0", "fwc", CVector3(1.3,0,0), CQuaternion(CRadians::PI, CVector3(0,0,1)));
+//    AddEntity(*pcFB);
+//    pcFB = new CFootBotEntity("fb_1", "fwc", CVector3(0,-1,0), CQuaternion(CRadians::PI_OVER_TWO, CVector3(0,0,1)));
+//    AddEntity(*pcFB);
 }
 
 

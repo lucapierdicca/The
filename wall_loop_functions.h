@@ -3,7 +3,7 @@
 
 #include <argos3/core/simulator/loop_functions.h>
 #include <argos3/plugins/robots/foot-bot/simulator/footbot_entity.h>
-#include "footbot_wall.h"
+//#include "footbot_wall.h"
 
 using namespace argos;
 

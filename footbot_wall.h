@@ -17,16 +17,19 @@
 #include <argos3/plugins/robots/generic/control_interface/ci_range_and_bearing_sensor.h>
 #include <argos3/plugins/robots/generic/control_interface/ci_positioning_sensor.h>
 
-#include <experimental/random>
+
+#include <random>
 
 /* 2D vector definition */
 #include <argos3/core/utility/math/vector2.h>
 
 #include <fstream>
 
+#include "types.h"
+#include "activity.cpp"
+#include "sensing.cpp"
 
 using namespace argos;
-
 
 class CFootBotWall : public CCI_Controller {
 
@@ -39,6 +42,7 @@ private:
    CCI_FootBotProximitySensor* m_pcProximity;
    CCI_RangeAndBearingSensor* m_pcRangeAndBearingS;
    CCI_PositioningSensor* m_pcPositioning;
+
 
    CDegrees m_cAlpha;
    Real m_fDelta;
@@ -55,17 +59,16 @@ private:
 
 public:
 
+   Real L = 14.0; // wheels distance [cm]
+   CVector2 goal_state;
+   char zone_old;
+   bool manouvering = false;
+   Sensing s;
+
    int tic = 0;
 
-   struct angle_data{
-      CRadians angle;
-      Real distance;
-      int age;
-      bool occluded;
-   };
-
-   std::map<CRadians, struct angle_data> world_model_short;
-   std::map<CRadians, struct angle_data> world_model_long;
+   std::map<CRadians, angle_data> world_model_short;
+   std::map<CRadians, angle_data> world_model_long;
 
 
    std::vector<struct angle_data> lmr_new;
@@ -105,14 +108,12 @@ public:
    std::array<int,4> extractFeatures();
    Real EucDistance(std::array<int,4> u, std::array<int,4> v);
    char predict(std::array<int,4> features);
-   
    std::array<Real,2> StructuredExploration(
-      Real r_distance_d, 
-      CRadians r_orientation_d, 
-      const CCI_RangeAndBearingSensor::TReadings&  rab_readings);
+   const CCI_RangeAndBearingSensor::TReadings& rab_readings,
+   std::map<CRadians, struct angle_data> world_model_long,
+   char zone,
+   const CCI_PositioningSensor::SReading& robot_state);
    
-   std::array<Real,2> UnstructuredExploration(
-      const CCI_FootBotProximitySensor::TReadings& proximity_readings);
 
    /* Class constructor. */
    CFootBotWall();

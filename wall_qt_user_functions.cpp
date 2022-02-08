@@ -19,19 +19,19 @@ void CWALLQTUserFunctions::Draw(CFootBotEntity& c_entity) {
 
 
    
-   controller = dynamic_cast<CFootBotWall&> (c_entity.GetControllableEntity().GetController());
+   //controller = dynamic_cast<CFootBotWall&> (c_entity.GetControllableEntity().GetController());
 
-   auto min_angle = controller.free_min.angle;
-   auto min_length = controller.free_min.distance;
+   auto min_angle = R_min_glbl.angle;
+   auto min_length = R_min_glbl.distance;
    CVector2 end = CVector2(min_length, min_angle);
    CRay3 ray = CRay3(CVector3(0.0, 0.0, 0.01) ,CVector3(end.GetX()*0.01, (end.GetY())*0.01, 0.01));
    DrawRay(ray, CColor::BLACK, 2.0f);
 
-   ray = CRay3(CVector3(0.0, 0.0, 2.01) ,CVector3(controller.nearest_robot_xy.GetX()*0.01, (controller.nearest_robot_xy.GetY())*0.01, 2.01));
-   DrawRay(ray, CColor::RED, 2.0f);
+   //ray = CRay3(CVector3(0.0, 0.0, 2.01) ,CVector3(controller.nearest_robot_xy.GetX()*0.01, (controller.nearest_robot_xy.GetY())*0.01, 2.01));
+   //DrawRay(ray, CColor::RED, 2.0f);
 
 
-   if(controller.GetId() == "fb_13"){
+   if(c_entity.GetId() == "fb_13"){
    
       // for (auto p : controller.pr){
       //    CVector2 end = CVector2(p.distance, p.angle);
@@ -56,6 +56,9 @@ void CWALLQTUserFunctions::Draw(CFootBotEntity& c_entity) {
 
 
 void CWALLQTUserFunctions::DrawInWorld() {
+
+    DrawPoint(CVector3(-0.75,9,0.6));
+    DrawPoint(CVector3(-0.75,3.5,0.6));
    // Real x = 0.85;
    // Real y = 0.0;
    // Real dx = 0.03;
