@@ -51,7 +51,7 @@
   <!-- * Arena configuration * -->
   <!-- *********************** -->
 
-  <arena size="12, 20, 1" center="0,0,0.5">
+  <arena size="20, 30, 1" center="0,0,0.5">
 
     <!-- Walls -->
 
@@ -137,7 +137,7 @@
 
 
      <distribute>
-      <position method="uniform" min="-0.5,-4,0" max="0.5,5.5,0" />
+      <position method="uniform" min="-0.5,0,0" max="0.5,12.5,0" />
       <orientation method="gaussian" mean="0,0,0" std_dev="360,0,0" />
       <entity quantity="1" max_trials="100" base_num="0">
         <foot-bot id="fb_">
@@ -194,14 +194,14 @@
   <!-- ****************** -->
 
   <visualization>
-<!--    <qt-opengl>
-      <user_functions library="build/libwall_loop_functions"
-                      label="wall_qt_user_functions" />
-      <camera>
-        <placements>
-          <placement index="0" position="0,0,30" look_at="0,0,0" up="0,1,0" lens_focal_length="65" />
-        </placements>
-      </camera>
-    </qt-opengl>-->
+<!--    <qt-opengl>-->
+<!--      <user_functions library="build/libwall_loop_functions"-->
+<!--                      label="wall_qt_user_functions" />-->
+<!--      <camera>-->
+<!--        <placements>-->
+<!--          <placement index="0" position="0,0,30" look_at="0,0,0" up="0,1,0" lens_focal_length="65" />-->
+<!--        </placements>-->
+<!--      </camera>-->
+<!--    </qt-opengl>-->
   </visualization>
 </argos-configuration>

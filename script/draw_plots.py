@@ -53,7 +53,7 @@ def plot_test_metrics_compound():
     table = {}
     for f_name in metrics_files:
         x,y,err = [],[],[]
-        for r in [1]:
+        for r in [10]:
             run_acc = []
             with open(f"data/test/{r}/{f_name}","rb") as f:
                 exp_run_metrics = pickle.load(f)

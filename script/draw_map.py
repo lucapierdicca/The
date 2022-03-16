@@ -30,8 +30,8 @@ def draw_map(map_path, wall_path, name):
     # plt.axis('scaled')
     plt.axis('equal')
     plt.axis('off')
-    plt.savefig(name)
-    # plt.show()
+    #plt.savefig(name)
+    plt.show()
 
 def draw_map_test_trajectories(robot_position, y_pred):
     with open("data/test/test_map_ground_truth.pickle", "rb") as f:
@@ -114,10 +114,10 @@ def draw_pred_evo_in_time(run_metric):
     plt.show()
 
 def draw_map_templates(robot_positions, robot_orientations, measurements):
-    with open("data/train/train_map_ground_truth.pickle", "rb") as f:
+    with open("data/train/train_map_2_ground_truth.pickle", "rb") as f:
         map_ground_truth = pickle.load(f)
 
-    with open("data/train/train_map_wall_boundary_vertices.pickle", "rb") as f:
+    with open("data/train/train_map_2_wall_boundary_vertices.pickle", "rb") as f:
         map_wall_boundary_vertices = pickle.load(f)
 
     fig, ax = plt.subplots()
@@ -172,17 +172,20 @@ if __name__ == '__main__':
 
     #draw_map_templates()
 
-    with(open("data/test/1/exp_metrics_linear_geometricB.pickle", "rb")) as f:
-        metrics = pickle.load(f)
+    # with(open("data/test/1/exp_metrics_linear_geometricB.pickle", "rb")) as f:
+    #     metrics = pickle.load(f)
+    #
+    # draw_pred_evo_in_time(metrics[0])
+    #
+    # trajectory,y_pred = [],[]
+    # for run in metrics:
+    #     trajectory += [[x[0], x[1] ]for x in run["x_pred"]]
+    #     y_pred += run["y_pred"]
+    #
+    # print(len(y_pred))
+    # draw_map_test_trajectories(trajectory ,y_pred)
 
-    draw_pred_evo_in_time(metrics[0])
-
-    trajectory,y_pred = [],[]
-    for run in metrics:
-        trajectory += [[x[0], x[1] ]for x in run["x_pred"]]
-        y_pred += run["y_pred"]
-
-    print(len(y_pred))
-    draw_map_test_trajectories(trajectory ,y_pred)
+    draw_map("data/test/test_map_ground_truth.pickle",
+             "data/test/test_map_wall_boundary_vertices.pickle", "")
 
 

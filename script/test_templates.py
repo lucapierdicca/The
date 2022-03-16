@@ -27,9 +27,13 @@ def test_extract_feature_template():
 def test_vis_collected_template():
 	# controllare by visual inspection che i template collezionati siano ok
 	template = loadDataset("data/train/template2.csv",
-						   "data/train/train_map_ground_truth.pickle")
+						   "data/train/train_map_2_ground_truth.pickle")
 	#template = [step for step in template if step["clock"] == 10]
-	template = [step for step in template if step["clock"] == 10 and (step["true_class"] != "C" or step["true_class"] == "C" and step["y"] > 2)]
+	classlbl_to_template = {}
+	for step in template:
+		if step["clock"] == 10 and step["true_class"] not in classlbl_to_template:
+			classlbl_to_template[step["true_class"]] = step
+	template = list(classlbl_to_template.values())
 
 	print(len(template))
 

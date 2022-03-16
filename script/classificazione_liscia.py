@@ -21,20 +21,24 @@ import numpy as np
 Point = namedtuple('Point','x y')
 
 n_robots = [1]
-feature_type = "template"  # ["template", "geometricP", "geometricB"]
+feature_type = "geometricB"  # ["template", "geometricP", "geometricB"]
 handle_occlusion = False
 load_model = False
 
-train = loadDataset("data/train/unstructured_occluded_2.csv",
-                    "data/train/train_map_ground_truth.pickle")
+train = loadDataset("data/train/unstructured_occluded_3.csv",
+                    "data/train/train_map_2_ground_truth.pickle")
 
 print("train: ", len(train))
 
 if feature_type == "template":
     template = loadDataset("data/train/template2.csv",
-                           "data/train/train_map_ground_truth.pickle")
+                           "data/train/train_map_2_ground_truth.pickle")
     #template = [step for step in template if step["clock"] == 10]
-    template = [step for step in template if step["clock"] == 10 and (step["true_class"] != "C" or step["true_class"] == "C" and step["y"] > 2)]
+    classlbl_to_template = {}
+    for step in template:
+        if step["clock"] == 10 and step["true_class"] not in classlbl_to_template:
+            classlbl_to_template[step["true_class"]] = step
+    template = list(classlbl_to_template.values())
     print("template: ", len(template))
 else:
     template = None

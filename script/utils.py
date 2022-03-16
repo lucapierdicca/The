@@ -89,7 +89,7 @@ def loadDataset(dataset_path, map_ground_truth_path, row_range=None):
 				if isInside(p, bv):
 					step['true_class'] = classlbl
 
-		if step['true_class'] not in ['V','C','I','G']:
+		if step['true_class'] not in ['V','C','I','G','S']:
 			print("WARNING: no true class. Skip this step.")
 			continue
 

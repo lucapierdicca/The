@@ -3,6 +3,8 @@ import random
 import xml.etree.ElementTree as ET
 import os
 from collections import namedtuple
+from pprint import pprint
+
 import numpy as np
 
 Point = namedtuple('Point','x y')
@@ -82,6 +84,8 @@ def dump_map_ground_truth(parsed_ggb):
                 color = (0, 0, 1.0, 1.0)
             if poly_data_dict["class"] == "G":
                 color = (1.0, 1.0, 0, 1.0)
+            if poly_data_dict["class"] == "S":
+                color = (0.0, 1.0, 1.0, 1.0)
 
             ground_truth[poly_data_dict["class"]] = {"poly_boundary_vertices": [poly_boundary_vertices], "color": color}
 
@@ -101,7 +105,7 @@ argos_proto_file = "wall_proto.argos"
 argos_file = "wall_test.argos"
 
 n_run = 30
-n_robot = [1,2,5,10,20,30]
+n_robot = [1]
 
 
 root_seed = 123

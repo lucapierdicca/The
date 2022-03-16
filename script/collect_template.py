@@ -6,6 +6,8 @@ from pprint import pprint
 import numpy as np
 from matplotlib import pyplot as plt
 
+from utils import Point
+
 
 def T(point):
     T = np.array([[0.0,0.0,point[0]],
@@ -20,10 +22,10 @@ def S(alpha_x, alpha_y):
     return S
 
 def draw_map_robot_positions(robot_positions):
-    with open("data/train/train_map_ground_truth.pickle", "rb") as f:
+    with open("data/train/train_map_2_ground_truth.pickle", "rb") as f:
         map_ground_truth = pickle.load(f)
 
-    with open("data/train/train_map_wall_boundary_vertices.pickle", "rb") as f:
+    with open("data/train/train_map_2_wall_boundary_vertices.pickle", "rb") as f:
         map_wall_boundary_vertices = pickle.load(f)
 
     fig, ax = plt.subplots()
@@ -53,14 +55,14 @@ def draw_map_robot_positions(robot_positions):
     plt.show()
 
 # apri la mappa di training
-with open("data/train/train_map_ground_truth.pickle","rb") as f:
+with open("data/train/train_map_2_ground_truth.pickle","rb") as f:
     map_ground_truth = pickle.load(f)
 
 # trasforma i vertici dei boundaries in homogeneous coordinates
 # lascia solo la colonna centrale della mappa (percé per adesso ti interessa solo quella)
 map_ground_truth = {key:[[[v[0], v[1], 1.0] for v in boundary]
                          # solo la colonna centrale della mappa
-                         for boundary in value["poly_boundary_vertices"] if boundary[0][0] == -0.75]
+                         for boundary in value["poly_boundary_vertices"]]
                             for key,value in map_ground_truth.items()}
 
 # ottieni le posizioni dove vuoi campionare le classi facendo questo:
@@ -82,7 +84,11 @@ for class_lbl,boundaries in map_ground_truth.items():
         sx,sy = 0.7,0.28 if class_lbl == "C" else 0.7
         vertices_prime = np.transpose((np.eye(3)+T(c))@S(sx,sy)@(np.eye(3)-T(c))@vertices.T)
         vertices_mid_points = [(vertices_prime[i%4,:] + vertices_prime[(i+1)%4,:]) / 2.0 for i in range(4)]
+
+        # griglia 3x3 piccola
         #template_positions = list(vertices_prime) + vertices_mid_points + [c]
+
+        # solo il centro
         template_positions = [c]
 
         if class_lbl not in class_lbl_to_template_positions:
@@ -98,7 +104,7 @@ draw_map_robot_positions(template_coordinates)
 
 
 #-----------------------------------------
-#
+
 argos_proto_file = "wall_proto.argos"
 argos_file = "wall_template.argos"
 
