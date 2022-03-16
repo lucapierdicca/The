@@ -3,7 +3,7 @@ import pickle
 import random
 from bisect import bisect_left
 from tqdm import tqdm
-from utils import DiscreteFilter_bigram, loadDataset, Point
+from utils import DiscreteFilter_bigram, load_dataset, Point
 from pprint import pprint
 import numpy as np
 from matplotlib import pyplot as plt
@@ -21,7 +21,7 @@ def produce_test_metrics(filter, n_robots=[1]):
         for j,exp in enumerate(exps):
             id = random.choice(range(r))
             # fb_id = f"fb_{id}"
-            test = loadDataset(f"data/test/{r}/{exp}",
+            test = load_dataset(f"data/test/{r}/{exp}",
                                "data/test/test_map_ground_truth.pickle",
                                row_range=[id * (10000 - 9), id * (10000 - 9) + (10000 - 9)])
             belief = [0.25,0.25,0.25,0.25]  # parte in C [I C V G]
@@ -58,7 +58,7 @@ def produce_test_metrics(filter, n_robots=[1]):
             pickle.dump(exp_metrics, f)
 
 def compute_transition_model_stationary_distro():
-    train = loadDataset("data/train/unstructured.csv",
+    train = load_dataset("data/train/unstructured.csv",
                         "data/train/train_map_ground_truth.pickle")
 
     filter = DiscreteFilter_bigram()
@@ -154,7 +154,7 @@ if __name__ == "__main__":
     # pprint(conditional_dict)
 
     print("Load dataset")
-    train = loadDataset("data/train/unstructured.csv",
+    train = load_dataset("data/train/unstructured.csv",
                         "data/train/train_map_ground_truth.pickle")
 
     filter = DiscreteFilter_bigram()

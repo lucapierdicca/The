@@ -1,21 +1,24 @@
 import random
 import pickle
 from tqdm import tqdm
-from utils import Classifier, GaussianFilter, loadDataset, Point
+from utils import Classifier, GaussianFilter, load_dataset, Point
 import os
 from pprint import pprint
 
 
-def produce_test_metrics(classifier_type, feature_type, n_robots=[1], load_model=True, handle_occlusion=False):
+def produce_test_metrics(classifier_type,
+                         feature_type,
+                         n_robots=[1],
+                         load_model=True,
+                         handle_occlusion=False,
+                         unique=False):
     # training and/or loading models for the HMM
-    train = loadDataset("data/train/unstructured_occluded_2.csv",
-                        "data/train/train_map_ground_truth.pickle")
+    train = load_dataset("data/train/unstructured_occluded_3.csv",
+                         "data/train/train_map_2_ground_truth.pickle")
     print("train: ", len(train))
 
-    classifier = Classifier()
-
     if feature_type == "template":
-        template = loadDataset("data/train/template2.csv",
+        template = load_dataset("data/train/template2.csv",
                                "data/train/train_map_ground_truth.pickle")
         template = [step for step in template if step["clock"] == 10]
         print("template: ", len(template))
@@ -23,8 +26,10 @@ def produce_test_metrics(classifier_type, feature_type, n_robots=[1], load_model
     else:
         filter = GaussianFilter(classifier_type, feature_type)
 
+    print(filter.classifier.classlbl_to_id)
+
     print("Estimate transition model")
-    filter.estimateTransitionModel(train)
+    filter.estimateTransitionModel(train, unique=unique)
     print("Done")
 
     pprint(filter.transition_model)
@@ -36,10 +41,12 @@ def produce_test_metrics(classifier_type, feature_type, n_robots=[1], load_model
     filter.estimateObservationModel(dataset=train, load_model=load_model)
     print("Done")
 
+    print(filter.clf.classes_)
     print(filter.clf.coef_)
     print(filter.clf.coef_.shape)
     print(filter.clf.intercept_)
     print(filter.clf.intercept_.shape)
+
 
     #testing loop (fake navigation simulation from argos collected data)
     for r in n_robots:
@@ -49,11 +56,11 @@ def produce_test_metrics(classifier_type, feature_type, n_robots=[1], load_model
         for exp in exps:
             id = random.choice(range(r))
             # fb_id = f"fb_{id}"
-            test = loadDataset(f"data/test/{r}/{exp}",
+            test = load_dataset(f"data/test/{r}/{exp}",
                                "data/test/test_map_ground_truth.pickle",
                                row_range=[id * (10000 - 9), id * (10000 - 9) + (10000 - 9)])
 
-            belief = [0.25, 0.25, 0.25, 0.25]  # [V C I G]
+            belief = [0.25]*filter.state_dim # G,C,S,V,I
             y_pred, valid_pred, x_pred, y_true = [], [], [], []
             prediction = "C"
             for step in tqdm(test):
@@ -65,18 +72,19 @@ def produce_test_metrics(classifier_type, feature_type, n_robots=[1], load_model
 
                     if handle_occlusion == True:
                         valid = False
-                        if(occlusion_data.count(True)/len(occlusion_data) < 0.5):
-                            z = classifier.preProcess(step['world_model_long'], 3)
+                        occlusion_ratio = occlusion_data.count(True)/len(occlusion_data)
+                        if(occlusion_ratio < 0.5):
+                            z = filter.classifier.preProcess(step['world_model_long'], 3)
                             feature = filter.extractFeature(z, handle_occlusion=handle_occlusion)
                             feature_std = filter.scaler.transform([feature])  # standardize
-                            belief = filter.update(belief, feature_std[0], log=True)
+                            belief = filter.update(belief, feature_std[0], occlusion_ratio, log=True)
                             prediction = filter.predict(belief)
                             valid = True
                         else:
                             print(f"INVALID {prediction}")
 
                     else:
-                        z = classifier.preProcess(step['world_model_long'], 3)
+                        z = filter.classifier.preProcess(step['world_model_long'], 3)
                         feature = filter.extractFeature(z, handle_occlusion=handle_occlusion)
                         feature_std = filter.scaler.transform([feature])  # standardize
                         belief = filter.update(belief, feature_std[0], log=True)
@@ -87,8 +95,8 @@ def produce_test_metrics(classifier_type, feature_type, n_robots=[1], load_model
                     valid_pred.append(valid)
 
 
-            report = classifier.classification_report_(y_true, y_pred, output_dict=True)
-            confusion = classifier.confusion_matrix_(y_true, y_pred)
+            report = filter.classifier.classification_report_(y_true, y_pred, output_dict=True)
+            confusion = filter.classifier.confusion_matrix_(y_true, y_pred)
 
             # store metrics
             metrics = {"fb_id": test[0]["fb_id"],
@@ -113,9 +121,10 @@ def produce_test_metrics(classifier_type, feature_type, n_robots=[1], load_model
 if __name__ == '__main__':
     classifier_type = ["linear"]  # ["linear", "quadratic"]
     feature_type = ["geometricB"]  # ["template", "geometricP", "geometricB"]
-    load_model = True
     n_robots = [1]
+    load_model = False
     handle_occlusion = False
+    unique = True
 
     for c in classifier_type:
         for f in feature_type:
@@ -123,4 +132,5 @@ if __name__ == '__main__':
             produce_test_metrics(c, f,
                                  load_model=load_model,
                                  n_robots=n_robots,
-                                 handle_occlusion=handle_occlusion)
+                                 handle_occlusion=handle_occlusion,
+                                 unique=unique)

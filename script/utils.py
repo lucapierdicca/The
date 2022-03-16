@@ -1,12 +1,13 @@
-
 from bisect import bisect_left
 import numpy as np
 from sklearn.metrics import confusion_matrix, classification_report
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
 from sklearn import preprocessing
 import csv
-from collections import namedtuple, deque
+from collections import namedtuple, deque, Counter
 import pickle
+
+from sklearn.svm import SVC
 from tqdm import tqdm
 from itertools import islice
 import math
@@ -22,7 +23,7 @@ def toRadians(degree):
 def norm(vector):
 	return np.linalg.norm(vector)
 
-def isInside(p: np.array, poly_boundary_vertices: list[Point]):
+def is_inside(p: np.array, poly_boundary_vertices: list[Point]):
 
 	turn_angle = 0.0
 	closed_poly_boundary_vertices = list(poly_boundary_vertices) + [poly_boundary_vertices[0]]
@@ -51,7 +52,7 @@ def isInside(p: np.array, poly_boundary_vertices: list[Point]):
 	else:
 		return False
 
-def loadDataset(dataset_path, map_ground_truth_path, row_range=None):
+def load_dataset(dataset_path, map_ground_truth_path, row_range=None):
 
 	with open(map_ground_truth_path,"rb") as f:
 		map_ground_truth = pickle.load(f)
@@ -86,10 +87,11 @@ def loadDataset(dataset_path, map_ground_truth_path, row_range=None):
 		p = np.array([[step['x']],[step['y']]])
 		for classlbl, data in map_ground_truth.items():
 			for bv in data['poly_boundary_vertices']:
-				if isInside(p, bv):
+				if is_inside(p, bv):
 					step['true_class'] = classlbl
 
 		if step['true_class'] not in ['V','C','I','G','S']:
+			print(p)
 			print("WARNING: no true class. Skip this step.")
 			continue
 
@@ -268,105 +270,10 @@ class Classifier:
 	def confusion_matrix_(self, y_true, y_pred):
 		return confusion_matrix(y_true, y_pred, labels=list(self.classlbl_to_id.keys()))
 
-class DiscreteFilter_bigram():
-
-	def __init__(self):
-		self.state_dim = 4
-		self.classifier = Classifier()
-		self.gap = None
-		self.edges = None
-		self.filter_min, self.filter_max = None, None
-
-	# learn from %10 steps
-	# counts start from 1 (add-one smoothing)
-	def estimateTransitionModel(self, dataset):
-		conditional = np.ones((self.state_dim, self.state_dim))
-
-		for i in range(len(dataset)-10):
-			classid = self.classifier.classlbl_to_id[dataset[i]['true_class']]
-			xt_1 = classid
-
-			classid = self.classifier.classlbl_to_id[dataset[i+10]['true_class']]
-			xt = classid
-
-			conditional[xt,xt_1] += 1.0
-
-		self.transition_model = conditional/np.sum(conditional, axis=0)
-
-	# learn from ALL steps
-	# counts start from 1 (add-one smoothing)
-	def estimateObservationModel(self, dataset, edges, gap, filter_min, filter_max):
-		self.edges = edges
-		self.gap = gap
-		self.filter_min, self.filter_max = filter_min, filter_max
-
-		self.classid_to_beamunigrams = {}
-		for i in range(len(dataset)):
-			classid = self.classifier.classlbl_to_id[dataset[i]['true_class']]
-			z = self.classifier.preProcess(dataset[i]['world_model_long'],3)
-
-			beam_unigrams = self.extractFeature(z)
-
-			if classid not in self.classid_to_beamunigrams:
-				self.classid_to_beamunigrams[classid] = beam_unigrams
-			else:
-				self.classid_to_beamunigrams[classid] += beam_unigrams
-
-		conditional_dict = {}
-		for classid, beam_unigrams in self.classid_to_beamunigrams.items():
-			conditional = np.ones((len(self.edges), len(self.edges)))
-			for bu in beam_unigrams:
-				prev_beam_bin_index = bisect_left(self.edges, bu[0]) - 1
-				next_beam_bin_index = bisect_left(self.edges, bu[1]) - 1
-
-				conditional[next_beam_bin_index, prev_beam_bin_index] += 1.0
-
-			conditional = conditional/ np.sum(conditional, axis=0) # to obtain conditional probabilities
-
-			conditional_dict[classid] = conditional
-
-		self.observation_model = conditional_dict
-
-	def extractFeature(self, measurement):
-		beam_lenghts = [bl if bl > self.filter_min and bl < self.filter_max else "*" for bl in list(measurement.values())] # filtering
-		beam_unigrams = []
-		for i in range(0,len(beam_lenghts)-self.gap, self.gap):
-			if beam_lenghts[i] != "*" and beam_lenghts[i+self.gap] != "*":
-				beam_unigrams.append([beam_lenghts[i], beam_lenghts[i+self.gap]])
-
-		return beam_unigrams
-
-	def update(self, belief, feature):
-		bt_t_1 = [0.0]*self.state_dim
-		# matrix-vector multiplication == transition_model (4x4) * belief (4x1)
-		for i in range(self.state_dim):
-			for j in range(self.state_dim):
-				bt_t_1[j] += self.transition_model[j, i]*belief[i]
-
-		btt = [0.0]*self.state_dim
-		den = 0.0
-		for i in range(self.state_dim):
-			p_measurement = 1.0
-			for unigram in feature:
-				prev_beam_bin_index = bisect_left(self.edges, unigram[0])-1
-				next_beam_bin_index = bisect_left(self.edges, unigram[1])-1
-				p_measurement *= self.observation_model[i][next_beam_bin_index,prev_beam_bin_index]
-
-			#print(i, p_measurement)
-
-			btt[i] = p_measurement*bt_t_1[i]
-			den+=btt[i]
-
-		return [b/den for b in btt]
-
-	def predict(self, belief):
-		argmax = np.argmax(np.array(belief))
-		return self.classifier.id_to_classlbl[argmax]
-
 class GaussianFilter:
 
 	def __init__(self, classifier_type, feature_type, template_dataset=None):
-		self.state_dim = 4
+		self.state_dim = 5
 		self.classifier = Classifier()
 		self.classifier_type = classifier_type
 		self.feature_type = feature_type
@@ -459,19 +366,38 @@ class GaussianFilter:
 
 		return min(convolutions)
 
-	def estimateTransitionModel(self, dataset):
-		# learn from %10 steps
+	def estimateTransitionModel(self, dataset, unique=False):
+
 		# counts start from 1 (add-one smoothing)
 		joint = np.ones((self.state_dim, self.state_dim))
 
-		for i in range(len(dataset)-10):
-			classid = self.classifier.classlbl_to_id[dataset[i]['true_class']]
-			xt_1 = classid
+		if unique:
+			dataset_unique = []
+			dataset_unique.append(dataset[0])
+			for i in range(1,len(dataset),1):
+				if dataset[i]["true_class"] != dataset_unique[-1]["true_class"]:
+					dataset_unique.append(dataset[i])
 
-			classid = self.classifier.classlbl_to_id[dataset[i+10]['true_class']]
-			xt = classid
+			# learn from all steps
+			for i in range(len(dataset_unique)-1):
+				classid = self.classifier.classlbl_to_id[dataset_unique[i]['true_class']]
+				xt_1 = classid
 
-			joint[xt,xt_1] += 1.0
+				classid = self.classifier.classlbl_to_id[dataset_unique[i+1]['true_class']]
+				xt = classid
+
+				joint[xt,xt_1] += 1.0
+
+		else:
+			# learn from %10 steps
+			for i in range(len(dataset)-10):
+				classid = self.classifier.classlbl_to_id[dataset[i]['true_class']]
+				xt_1 = classid
+
+				classid = self.classifier.classlbl_to_id[dataset[i+10]['true_class']]
+				xt = classid
+
+				joint[xt,xt_1] += 1.0
 
 		self.transition_model = joint/np.sum(joint, axis=0)
 
@@ -729,7 +655,7 @@ class GaussianFilter:
 
 		return pdf[0][0], mahalanobis
 
-	def update(self, belief, feature, log=False):
+	def update(self, belief, feature, weight=None, log=False):
 		#predict step
 		bt_t_1 = [0.0]*self.state_dim
 		for i in range(self.state_dim):
@@ -768,7 +694,11 @@ class GaussianFilter:
 			x = np.array(feature).reshape((-1,1))
 			log_prior = np.log(np.array(bt_t_1).reshape((-1,1)))
 			#(4,1) = (4,9)x(9,1) + (4,1) + (4,1)
-			decision_function = self.clf.coef_@x + self.clf.intercept_.reshape((-1,1)) + log_prior
+			if weight is None:
+				decision_function = self.clf.coef_@x + self.clf.intercept_.reshape((-1,1)) + log_prior
+			else:
+				decision_function = (1-weight)*(self.clf.coef_@x + self.clf.intercept_.reshape((-1,1))) \
+									+ (weight*log_prior)
 			#softmax
 			btt = np.exp(decision_function)/np.sum(np.exp(decision_function))
 
@@ -783,210 +713,238 @@ class GaussianFilter:
 		argmax = np.argmax(np.array(belief))
 		return self.classifier.id_to_classlbl[argmax]
 
-class DiscreteFilter_count():
+class HybridFilter:
 
-	def __init__(self, edges=None, gap=None, filter_min=None, filter_max=None):
-		self.state_dim = 4
+	def __init__(self):
+		self.state_dim = 5
 		self.classifier = Classifier()
-		self.gap = gap
-		self.edges = edges
-		self.filter_min, self.filter_max = filter_min, filter_max
 
-		self.mapping = {0:3, 1:0, 2:2, 3:1}
+	def estimateTransitionModel(self, dataset, unique=False):
+		# counts start from 1 (add-one smoothing)
+		joint = np.ones((self.state_dim, self.state_dim))
 
-	def set_params(self, edges, gap, filter_min, filter_max):
-		self.gap = gap
-		self.edges = edges
-		self.filter_min, self.filter_max = filter_min, filter_max
+		if unique:
+			dataset_unique = []
+			dataset_unique.append(dataset[0])
+			for i in range(1,len(dataset),1):
+				if dataset[i]["true_class"] != dataset_unique[-1]["true_class"]:
+					dataset_unique.append(dataset[i])
 
-	def extractFeature(self, measurement):
-		beam_lenghts = [bl if bl > self.filter_min and bl < self.filter_max else "*" for bl in list(measurement.values())] # filtering
-		counts = [0]*(len(list(self.edges))-1)
+			# learn from all steps
+			for i in range(len(dataset_unique)-1):
+				classid = self.classifier.classlbl_to_id[dataset_unique[i]['true_class']]
+				xt_1 = classid
 
-		for i in range(0,len(beam_lenghts), self.gap):
-			if beam_lenghts[i] != "*" and beam_lenghts[i]<=list(self.edges)[-1]:
-				index = bisect_left(self.edges, beam_lenghts[i]) - 1
-				counts[index] += 1
+				classid = self.classifier.classlbl_to_id[dataset_unique[i+1]['true_class']]
+				xt = classid
 
-		window_len = 5
-		local_min_count = 0
-		for i in range(0,len(beam_lenghts)-window_len,1):
-			sequence = beam_lenghts[i:i+window_len]
-			if all(list(map(lambda x: x!= "*", sequence))):
-				if(sequence[0]>sequence[1] and sequence[1]>sequence[2] and sequence[3]>sequence[2] and sequence[4]>sequence[3]):
-					local_min_count +=1
+				joint[xt,xt_1] += 1.0
+
+		else:
+			# learn from %10 steps
+			for i in range(len(dataset)-10):
+				classid = self.classifier.classlbl_to_id[dataset[i]['true_class']]
+				xt_1 = classid
+
+				classid = self.classifier.classlbl_to_id[dataset[i+10]['true_class']]
+				xt = classid
+
+				joint[xt,xt_1] += 1.0
+
+		self.transition_model = joint/np.sum(joint, axis=0)
+
+	def estimateObservationModel(self, dataset, load_model=True):
+
+		X_train, y_train = [],[]
+
+		if load_model == False:
+			for step in tqdm(dataset):
+				z = self.classifier.preProcess(step["world_model_long"], 3)
+				X_train.append(self.extractFeature(z, handle_occlusion=False))
+				y_train.append(step["true_class"])
+
+			X_train = np.array(X_train)
+			print(X_train.shape)
+
+			self.scaler = preprocessing.StandardScaler()
+			self.scaler.fit(X_train)
+			X_train = self.scaler.transform(X_train)
+
+			self.clf = SVC(probability=True)
+			self.clf.fit(X_train,y_train)
+
+			self.P_c = np.zeros(len(self.clf.classes_))
+			count = Counter(y_train)
+			for i,l in enumerate(self.clf.classes_):
+				self.P_c[i] = count[l] / len(y_train)
+
+			with open(f"P_c.pickle",'wb') as f:
+				pickle.dump(self.P_c, f)
+			with open(f"model_svc.pickle",'wb') as f:
+				pickle.dump(self.clf, f)
+			with open(f"scaler_svc.pickle",'wb') as f:
+				pickle.dump(self.scaler, f)
+
+		else:
+			with open(f"P_c.pickle","rb") as f:
+				self.P_c = pickle.load(f)
+			with open(f"model_svc.pickle","rb") as f:
+				self.clf = pickle.load(f)
+			with open(f"scaler_svc.pickle","rb") as f:
+				self.scaler = pickle.load(f)
+
+	def extractFeature(self, measurement, handle_occlusion=False):
+		Point = namedtuple('Point', 'x y')
+
+		if handle_occlusion == True:
+			v = [Point(data["distance"]*np.cos(a),data["distance"]*np.sin(a))
+				 for a,data in measurement.items() if data["occluded"] == False]
+		else:
+			v = [Point(data["distance"]*np.cos(a),data["distance"]*np.sin(a))
+				 for a,data in measurement.items()]
 
 
-		return counts + [local_min_count]
+		v.append(v[0])
 
-	def estimateTransitionModel(self, dataset):
-		conditional = np.ones((self.state_dim, self.state_dim))
+		# B.1 and B.2
+		# (shoelace formula)
+		A, P = 0.0, 0.0
+		for i in range(len(v)-1):
+			A += v[i].x*v[i+1].y - v[i].y*v[i+1].x
+			P += np.linalg.norm(np.array(v[i+1])-np.array(v[i]))
+		B1, B2 = A, P
 
-		for i in range(len(dataset)-10):
-			classid = self.classifier.classlbl_to_id[dataset[i]['true_class']]
-			xt_1 = classid
+		# B.3
+		B3 = A/P
 
-			classid = self.classifier.classlbl_to_id[dataset[i+10]['true_class']]
-			xt = classid
+		# B.4
+		cx, cy = 0.0, 0.0
+		for i in range(len(v)-1):
+			m = (v[i].x*v[i+1].y - v[i+1].x*v[i].y)
+			cx += (v[i].x + v[i+1].x) * m
+			cy += (v[i].y + v[i+1].y) * m
 
-			conditional[xt,xt_1] += 1.0
+		c = np.array(Point(cx/6*A, cy/6*A))
+		avg_shape = 0.0
+		d = [np.linalg.norm(np.array(v[i]) - c) for i in range(len(v)-1)]
+		for i in range(len(v)-1):
+			avg_shape += np.linalg.norm(np.array(v[i]) - c)#/max(d)
 
-		self.transition_model = conditional/np.sum(conditional, axis=0)
+		avg_shape /= (len(v)-1)
+		B4 = avg_shape
 
-		# self.transition_model= np.array([[7.0/14, 5.0/32, 1.0/13, 1.0/12],
-		# 								 [5.0/14,20.0/32,4.0/13,3.0/12],
-		# 								 [1.0/14,4.0/32,7.0/13,1.0/12],
-		# 								 [1.0/14,3.0/32,1.0/13,7.0/12]])
+		# B.5
+		std_shape = 0.0
+		d = [np.power(np.linalg.norm(np.array(v[i]) - c) - B4, 2)]
+		for i in range(len(v)-1):
+			std_shape += np.power(np.linalg.norm(np.array(v[i]) - c) - B4, 2)
 
-		#self.transition_model = np.ones((4,4))*0.25
+		std_shape /= (len(v)-1)
+		#std_shape /= max(d)
+		std_shape  = np.sqrt(std_shape)
+		B5 = std_shape
 
+		# B.7 B.8
+		# t = 0
+		# ds_s, t_s = [],[]
+		# for i in range(len(v)-1):
+		# 	dv = (v[i+1].x + v[i+1].y * 1j) - (v[i].x + v[i].y * 1j)
+		# 	ds = dv / abs(dv)
+		# 	t += abs(dv)
+		# 	ds_s.append(ds)
+		# 	t_s.append(t)
+		#
+		# c=0
+		# for i in range(len(ds_s)):
+		# 	c += (ds_s[i+1] - ds[i])*np.exp(-1j*np.pi*(2*np.pi/P)*t[i])
+		#
+		# coeff = P/(2*np.pi)**2
+		# c_1 = coeff*c
+		# c__1 = coeff
 
-	# learn from ALL steps
-	# counts start from 1 (add-one smoothing)
-	# def estimateObservationModel(self, dataset):
-	# 	X, y = [],[]
-	#
-	# 	for step in dataset:
-	# 		X.append(self.extractFeature(step["world_model_long"]))
-	# 		y.append(step["true_class"])
-	#
-	# 	clf = MultinomialNB()
-	# 	clf.fit(X,y)
-	#
-	#
-	# 	print(clf.classes_)
-	# 	pprint(np.exp(clf.feature_log_prob_))
-	# 	print(np.sum(np.exp(clf.feature_log_prob_),axis=1))
-	#
-	# 	self.observation_model = clf
+		# Perimeter and Area convex_hull
+		# hull_indices = ConvexHull(poly_v[:-1]).vertices
+		# hull_v = [poly_v[index] for index in hull_indices]
+		# hull_v.append(hull_v[0])
+		#
+		# convex_A = 0.0
+		# convex_P = 0.0
+		# for i in range(len(hull_v)-1):
+		# 	convex_A += hull_v[i][0]*hull_v[i+1][1] - hull_v[i][1]*hull_v[i+1][0]
+		# 	convex_P += np.linalg.norm(np.array(hull_v[i+1])-np.array(hull_v[i]))
 
-	def estimateObservationModel(self, dataset):
-		X, y = [],[]
-		classlbl_to_params = {}
+		#Max and min Feret's diameters
 
-		for step in dataset:
-			X.append(self.extractFeature(step["world_model_long"]))
-			y.append(step["true_class"])
+		# B.7 B.8 simply
+		diameters = []
+		if handle_occlusion == True:
+			d = [data["distance"] for data in list(measurement.values()) if data["occluded"] == False]
+		else:
+			d = [data["distance"] for data in list(measurement.values())]
 
-		X = np.array(X)
+		for i in range(len(d) - 60):
+			diameters.append(d[i]+d[i+59])
 
-		for x, classlbl in zip(X,y):
-			if classlbl not in classlbl_to_params:
-				classlbl_to_params[classlbl] = x
-			else:
-				classlbl_to_params[classlbl] += x
+		B7 = max(diameters)
+		B8 = min(diameters)
 
-		for classlbl,params in classlbl_to_params.items():
-			classlbl_to_params[classlbl] = classlbl_to_params[classlbl] + np.ones(params.shape)
-			classlbl_to_params[classlbl] = classlbl_to_params[classlbl] / np.sum(params)
+		return [B1, B2, B3, B4, B5, B7, B8]
 
-		self.observation_model = classlbl_to_params
-
-	# def update(self, belief, feature):
-	# 	bt_t_1 = [0.0]*self.state_dim
-	# 	# matrix-vector multiplication == transition_model (4x4) * belief (4x1)
-	# 	for i in range(self.state_dim):
-	# 		for j in range(self.state_dim):
-	# 			bt_t_1[j] += self.transition_model[j, i]*belief[i]
-	#
-	# 	if any(list(map(lambda x: x==0.0, bt_t_1))):
-	# 		raise ValueError("Componente bt_t_1 0.0")
-	#
-	# 	bt_t_1_prime = [0.0]*self.state_dim
-	# 	for k,v in self.mapping.items():
-	# 		bt_t_1_prime[v] = bt_t_1[k]
-	#
-	# 	self.observation_model.set_params(**{"class_prior":bt_t_1_prime, "fit_prior":False})
-	# 	#print(self.observation_model.get_params()["class_prior"] == bt_t_1)
-	# 	btt_prime = self.observation_model.predict_proba([feature])
-	# 	#print(btt, sum(btt[0]))
-	#
-	# 	btt = [0.0]*self.state_dim
-	# 	for k,v in self.mapping.items():
-	# 		btt[k] = btt_prime[0][v]
-	#
-	# 	if any(list(map(lambda x: x==0.0, btt))):
-	# 		raise ValueError("Componente btt 0.0")
-	#
-	# 	print(bt_t_1, btt)
-	#
-	# 	return btt
-
-	def update(self, belief, feature):
+	def update(self, belief, feature, weight=None):
+		# predict step
 		bt_t_1 = [0.0]*self.state_dim
-		# matrix-vector multiplication == transition_model (4x4) * belief (4x1)
 		for i in range(self.state_dim):
 			for j in range(self.state_dim):
 				bt_t_1[j] += self.transition_model[j, i]*belief[i]
 
-		btt = [0.0]*self.state_dim
-		den = 0.0
-		for i in range(self.state_dim):
-			feat_proba = 1.0
-			for index,count in enumerate(feature):
-				feat_proba *= np.power(self.observation_model[self.classifier.id_to_classlbl[i]][index], count)
+		# update step
+		log_prior = np.log(np.array(bt_t_1).reshape((-1,1)))
 
-			#print(i, feat_proba)
-			btt[i] = feat_proba*bt_t_1[i]
-			den+=btt[i]
+		P_c_x = self.clf.predict_proba(feature) # (5,1)
+		P_x_c = P_c_x / self.P_c
+		log_likelihood = np.log(P_x_c)
 
-		btt = [b/den for b in btt]
+		if weight is None:
+			log_posterior = log_likelihood + log_prior
+		else:
+			log_posterior = (1.0-weight)*(log_likelihood) + (weight*log_prior)
 
-		#print(bt_t_1, btt)
+		#softmax
+		btt = np.exp(log_posterior)/np.sum(np.exp(log_posterior))
 
-		return btt
-
+		return btt.reshape((1,-1)).tolist()[0]
 
 	def predict(self, belief):
 		argmax = np.argmax(np.array(belief))
 		return self.classifier.id_to_classlbl[argmax]
 
-def draw_distribution_for_single_template_feature():
-	train = loadDataset("data/train/unstructured.csv",
-						"data/train/train_map_ground_truth.pickle")
-	template= loadDataset("data/train/template.csv", "data/train/train_map_ground_truth.pickle")
-	filter = GaussianFilter("linear", "template", template)
-
-	X, y_true = [], []
-	for step in train:
-		z = filter.classifier.preProcess(step['world_model_long'],3)
-		feature = filter.extractFeatureTemplate(z)
-		X.append(feature)
-		y_true.append(step["true_class"])
-
-	classlbl_to_featurevalue = {}
-	for f_vector, y in zip(X, y_true):
-		if y not in classlbl_to_featurevalue:
-			classlbl_to_featurevalue[y] = []
-			classlbl_to_featurevalue[y].append(f_vector)
-		else:
-			classlbl_to_featurevalue[y].append(f_vector)
-
-	for k,v in classlbl_to_featurevalue.items():
-		classlbl_to_featurevalue[k] = np.array(v)
-
-	fig, axs = plt.subplots(1, 4, sharey=True)
-
-	for i in range(4):
-		axs[i].hist(classlbl_to_featurevalue["C"][:,i], bins = 10, density=True)
-		axs[i].set(title=str(i))
-
-	plt.show()
-
-def debug_extract_feature_count():
-	# train = loadDataset("data/train/unstructured.csv",
-	# 					"data/train/train_map_ground_truth.pickle")
-	filter_min, filter_max = 10, 160
-	gap = 1
-	edges = range(10,160,30)
-	print(list(edges))
-
-	filter = DiscreteFilter_count(edges, gap, filter_min, filter_max)
-	feature = filter.extractFeature({1:122.0, 2:20.8, 3:20.4, 4:120, 5:150, 6:132.3, 7:45.7, 8:110.8, 9:110})
-	pprint(feature)
 
 if __name__ == '__main__':
-	pass
+
+
+	filter = GaussianFilter("linear", "geometricB")
+	print(filter.classifier.classlbl_to_id)
+
+	# train = load_dataset("data/train/unstructured_occluded_3.csv",
+	# 					 "data/train/train_map_2_ground_truth.pickle")
+	#
+	# print(len(train))
+	# filter.estimateTransitionModel(train)
+	# print(filter.transition_model)
+	#
+	# train_unique = []
+	# train_unique.append(train[0])
+	# for i in range(1,len(train),1):
+	# 	if train[i]["true_class"] != train_unique[-1]["true_class"]:
+	# 		train_unique.append(train[i])
+	#
+	# print(train_unique)
+	#
+	#
+	# print(len(train_unique))
+	# filter.estimateTransitionModel(train_unique)
+	# print(filter.transition_model)
+
 
 
 

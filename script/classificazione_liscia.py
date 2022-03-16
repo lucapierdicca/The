@@ -13,32 +13,39 @@ from bisect import bisect_left
 from tqdm import tqdm
 
 from draw_map import draw_map_test_trajectories
-from utils import Classifier, loadDataset, GaussianFilter
+from utils import Classifier, load_dataset, GaussianFilter
 import numpy as np
 
 
 
 Point = namedtuple('Point','x y')
 
-n_robots = [1]
+n_robots = [20]
 feature_type = "geometricB"  # ["template", "geometricP", "geometricB"]
-handle_occlusion = False
-load_model = False
+handle_occlusion = True
+load_model = True
 
-train = loadDataset("data/train/unstructured_occluded_3.csv",
+train = load_dataset("data/train/unstructured_occluded_3.csv",
                     "data/train/train_map_2_ground_truth.pickle")
 
 print("train: ", len(train))
 
 if feature_type == "template":
-    template = loadDataset("data/train/template2.csv",
+    template = load_dataset("data/train/template2.csv",
                            "data/train/train_map_2_ground_truth.pickle")
     #template = [step for step in template if step["clock"] == 10]
     classlbl_to_template = {}
     for step in template:
-        if step["clock"] == 10 and step["true_class"] not in classlbl_to_template:
-            classlbl_to_template[step["true_class"]] = step
-    template = list(classlbl_to_template.values())
+        if step["clock"] == 10:
+            if step["true_class"] not in classlbl_to_template:
+                classlbl_to_template[step["true_class"]] = [step]
+            else:
+                if len(classlbl_to_template[step["true_class"]]) < 9:
+                    classlbl_to_template[step["true_class"]].append(step)
+
+    template = []
+    for v in classlbl_to_template.values():
+        template += v
     print("template: ", len(template))
 else:
     template = None
@@ -71,15 +78,15 @@ def train_test():
         # clf = LinearDiscriminantAnalysis(store_covariance=True)
         # clf.fit(X_train, y_train)
 
-        with open(f"model_svc_template_center_{feature_type}.pickle",'wb') as f:
+        with open(f"model_svc_{feature_type}.pickle",'wb') as f:
             pickle.dump(clf, f)
-        with open(f"scaler_svc_template_center_{feature_type}.pickle",'wb') as f:
+        with open(f"scaler_svc_{feature_type}.pickle",'wb') as f:
             pickle.dump(scaler, f)
 
     else:
-        with open(f"model_svc_template_center_{feature_type}.pickle","rb") as f:
+        with open(f"model_svc_{feature_type}.pickle","rb") as f:
             clf = pickle.load(f)
-        with open(f"scaler_svc_template_center_{feature_type}.pickle","rb") as f:
+        with open(f"scaler_svc_{feature_type}.pickle","rb") as f:
             scaler = pickle.load(f)
 
     print(clf.classes_)
@@ -95,7 +102,7 @@ def train_test():
         for j,exp in enumerate(exps):
             id = random.choice(range(r))
 
-            test = loadDataset(f"data/test/{r}/{exp}",
+            test = load_dataset(f"data/test/{r}/{exp}",
                                "data/test/test_map_ground_truth.pickle",
                                row_range=[id * (10000 - 9), id * (10000 - 9) + (10000 - 9)])
 
@@ -129,116 +136,6 @@ def train_test():
 
 train_test()
 
-
-
-
-
-# <editor-fold desc="MultinomialNB with counts">
-def MultinomialNB_traintest():
-    edges = range(10,160,20)
-    print(list(edges))
-    gap = 10
-    filter_min, filter_max = 10, 160
-
-    #train
-    X_train, y_train = [],[]
-
-    for step in train:
-        z = Classifier().preProcess(step["world_model_long"], 3)
-        X_train.append(extractFeatureCounts(z, filter_min, filter_max, edges, gap))
-        y_train.append(step["true_class"])
-
-    X_train = np.array(X_train)
-    print(X_train.shape)
-
-    clf = MultinomialNB()
-    clf.fit(X_train,y_train)
-
-    print(clf.classes_)
-    pprint(np.exp(clf.feature_log_prob_))
-
-    #test
-    X_test, y_test = [],[]
-
-    for r in n_robots:
-        exp_metrics = []
-        print(f"Robots: {r}")
-        exps = [_ for _ in os.listdir(f"data/test/{r}/") if ".csv" in _]
-        for j,exp in enumerate(exps):
-            id = random.choice(range(r))
-
-            test = loadDataset(f"data/test/{r}/{exp}",
-                               "data/test/test_map_ground_truth.pickle",
-                               row_range=[id * (10000 - 9), id * (10000 - 9) + (10000 - 9)])
-
-            for step in test:
-                if step['clock'] % 10 == 0:
-                    y_test.append(step['true_class'])
-                    z = Classifier().preProcess(step['world_model_long'], 3)
-                    X_test.append(extractFeatureCounts(z, filter_min, filter_max, edges, gap))
-
-    X_test = np.array(X_test)
-    print(X_test.shape)
-
-    y_pred = clf.predict(X_test)
-
-    print(Classifier().classification_report_(y_test, y_pred))
-    print(Classifier().confusion_matrix_(y_test, y_pred))
-# </editor-fold>
-
-# <editor-fold desc="SVM with geometricP">
-def SVMGeometricB_traintest():
-    #train
-    X_train, y_train = [],[]
-
-    for step in train:
-        z = Classifier().preProcess(step["world_model_long"], 3)
-        X_train.append(extractFeatureGeometricB(z))
-        y_train.append(step["true_class"])
-
-
-    X_train = np.array(X_train)
-    print(X_train.shape)
-
-    scaler = preprocessing.StandardScaler()
-    scaler.fit(X_train)
-    X_train = scaler.transform(X_train)
-
-    clf = SVC()
-    clf.fit(X_train,y_train)
-
-    print(clf.classes_)
-
-    #test
-    X_test, y_test = [],[]
-
-    for r in n_robots:
-        exp_metrics = []
-        print(f"Robots: {r}")
-        exps = [_ for _ in os.listdir(f"data/test/{r}/") if ".csv" in _]
-        for j,exp in enumerate(exps):
-            id = random.choice(range(r))
-
-            test = loadDataset(f"data/test/{r}/{exp}",
-                               "data/test/test_map_ground_truth.pickle",
-                               row_range=[id * (10000 - 9), id * (10000 - 9) + (10000 - 9)])
-
-            for step in test:
-                if step['clock'] % 10 == 0:
-                    y_test.append(step['true_class'])
-                    z = Classifier().preProcess(step['world_model_long'], 3)
-                    X_test.append(extractFeatureGeometricB(z))
-
-    X_test = np.array(X_test)
-    print(X_test.shape)
-
-    X_test = scaler.transform(X_test)
-
-    y_pred = clf.predict(X_test)
-
-    print(Classifier().classification_report_(y_test, y_pred))
-    print(Classifier().confusion_matrix_(y_test, y_pred))
-# </editor-fold>
 
 
 

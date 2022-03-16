@@ -2,26 +2,22 @@ from pprint import pprint
 
 import matplotlib.pyplot as plt
 import pickle
-from utils import Point, GaussianFilter, Classifier
 import numpy as np
 
+from script.map import Map
+from script.utils import Point
 
-def draw_map(map_path, wall_path, name):
-    with open(map_path, "rb") as f:
-        map_ground_truth = pickle.load(f)
 
-    with open(wall_path, "rb") as f:
-        map_wall_boundary_vertices = pickle.load(f)
-
+def draw_map(map):
     fig, ax = plt.subplots()
 
-    for boundary_id, vertices in map_wall_boundary_vertices.items():
+    for boundary_id, vertices in map.wall_boundary_vertices.items():
         vertices = [[v[0], v[1]] for v in vertices]
         boundary = plt.Polygon(vertices, closed=True, fill=None, edgecolor='black')
 
         ax.add_patch(boundary)
 
-    for class_lbl, poly_data in map_ground_truth.items():
+    for class_lbl, poly_data in map.ground_truth.items():
         for vertices in poly_data["poly_boundary_vertices"]:
             boundary = plt.Polygon(vertices, closed=True, fill=True, edgecolor=None,
                                    facecolor=poly_data["color"], alpha=0.3)
@@ -113,6 +109,83 @@ def draw_pred_evo_in_time(run_metric):
     ax.scatter(x, y, s=0.5)
     plt.show()
 
+def draw_map_step(dataset, map=None, interval=None):
+    fig, ax = plt.subplots()
+
+    if map is not None:
+        for boundary_id, vertices in map.wall_boundary_vertices.items():
+            vertices = [[v[0], v[1]] for v in vertices]
+            boundary = plt.Polygon(vertices, closed=True, fill=None, edgecolor='black')
+
+            ax.add_patch(boundary)
+
+        for class_lbl, poly_data in map.ground_truth.items():
+            for vertices in poly_data["poly_boundary_vertices"]:
+                boundary = plt.Polygon(vertices, closed=True, fill=True, edgecolor=None,
+                                       facecolor=poly_data["color"], alpha=0.3)
+                ax.add_patch(boundary)
+
+
+    if interval is None:
+        my_range = range(0,len(dataset),1)
+    else:
+        my_range = range(*interval)
+
+    robot_positions, robot_orientations, measurements = [], [], []
+    for i in my_range:
+        robot_positions.append([dataset[i]["x"], dataset[i]["y"]])
+        robot_orientations.append(dataset[i]["theta"])
+        measurements.append(dataset[i]["world_model_long"])
+
+
+    origin = plt.Circle((0.0,0.0), radius=0.02, edgecolor=None, facecolor="black", zorder=3)
+    for rp,ro,z in zip(robot_positions, robot_orientations, measurements):
+        w_R_r = np.array([[np.cos(ro), -np.sin(ro)],
+                          [np.sin(ro), np.cos(ro)]])
+
+        r_face = np.array([[rp[0]],[rp[1]]]) + w_R_r@np.array([[0.12],
+                                                               [0.0]])
+        face = plt.Circle(r_face, radius=0.02, edgecolor=None,
+                          facecolor="black", zorder=3)
+
+        body = plt.Circle(rp, radius=0.12, edgecolor=None,
+                          facecolor=(0.0, 0.0, 1.0, 1.0), zorder=2)
+
+
+        for angle,d in z.items():
+            r_p = np.array([[(d["distance"]+12)/100*np.cos(angle)],
+                            [(d["distance"]+12)/100*np.sin(angle)]])
+            w_p = np.array([[rp[0]],[rp[1]]]) + w_R_r@r_p
+            ray = plt.Line2D([rp[0],w_p[0]],[rp[1],w_p[1]],
+                             linewidth=0.2,
+                             antialiased=True,
+                             color=(1.0,0.0,0.0,1.0) if d["occluded"] == 0 else (0.0,0.0,1.0,1.0), zorder=1)
+            ax.add_line(ray)
+
+            if "occluding_robot_data" in d:
+                r_p2 = np.array([[(d["occluding_robot_data"][1]+24)/100*np.cos(d["occluding_robot_data"][0])],
+                                [(d["occluding_robot_data"][1]+24)/100*np.sin(d["occluding_robot_data"][0])]])
+                w_p2 = np.array([[rp[0]],[rp[1]]]) + w_R_r@r_p2
+                ax.add_patch(plt.Circle(w_p2, radius=0.12, edgecolor="black",
+                                        facecolor=(1.0,0.0,0.0,0.0), zorder=3, linewidth=0.1))
+
+                w_p3 = np.array([[rp[0]],[rp[1]]]) + w_R_r@d["occluding_robot_data"][2]*1/100
+                ray2 = plt.Line2D([rp[0],w_p3[0]],[rp[1],w_p3[1]],
+                                 linewidth=0.8,
+                                 antialiased=True,
+                                 color=(1.0,0.0,1.0,1.0), zorder=1)
+                ax.add_line(ray2)
+
+        ax.add_patch(origin)
+        ax.add_patch(body)
+        ax.add_patch(face)
+
+    #plt.axis('scaled')
+    plt.axis('equal')
+    plt.axis('off')
+    # plt.savefig(name)
+    plt.show()
+
 def draw_map_templates(robot_positions, robot_orientations, measurements):
     with open("data/train/train_map_2_ground_truth.pickle", "rb") as f:
         map_ground_truth = pickle.load(f)
@@ -157,7 +230,7 @@ def draw_map_templates(robot_positions, robot_orientations, measurements):
                              linewidth=0.2,
                              antialiased=True,
                              color=(1.0,0.0,0.0,1.0))
-            #ax.add_line(ray)
+            ax.add_line(ray)
 
     # plt.axis('scaled')
     plt.axis('equal')
@@ -168,24 +241,7 @@ def draw_map_templates(robot_positions, robot_orientations, measurements):
 
 
 if __name__ == '__main__':
-    from utils import loadDataset
+    pass
 
-    #draw_map_templates()
-
-    # with(open("data/test/1/exp_metrics_linear_geometricB.pickle", "rb")) as f:
-    #     metrics = pickle.load(f)
-    #
-    # draw_pred_evo_in_time(metrics[0])
-    #
-    # trajectory,y_pred = [],[]
-    # for run in metrics:
-    #     trajectory += [[x[0], x[1] ]for x in run["x_pred"]]
-    #     y_pred += run["y_pred"]
-    #
-    # print(len(y_pred))
-    # draw_map_test_trajectories(trajectory ,y_pred)
-
-    draw_map("data/test/test_map_ground_truth.pickle",
-             "data/test/test_map_wall_boundary_vertices.pickle", "")
 
 

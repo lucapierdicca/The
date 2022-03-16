@@ -105,7 +105,7 @@ argos_proto_file = "wall_proto.argos"
 argos_file = "wall_test.argos"
 
 n_run = 30
-n_robot = [1]
+n_robot = [20]
 
 
 root_seed = 123
