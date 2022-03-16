@@ -1,12 +1,9 @@
-import os
-from bisect import bisect_left
 
+from bisect import bisect_left
 import numpy as np
 from sklearn.metrics import confusion_matrix, classification_report
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
-from sklearn.naive_bayes import MultinomialNB
 from sklearn import preprocessing
-from scipy.spatial import ConvexHull
 import csv
 from collections import namedtuple, deque
 import pickle
@@ -98,10 +95,11 @@ def loadDataset(dataset_path, map_ground_truth_path, row_range=None):
 
 		step['color'] = map_ground_truth[step['true_class']]['color']
 
-		if "unstructured_occluded" in dataset_path: # perché per ora è l'unico che ha il cmapo occluded nel .csv
+		if "template" in dataset_path or "test" in dataset_path or "train" in dataset_path: # perché per ora è l'unico che ha il campo occluded nel .csv
 			step['world_model_long'] = {float(row[i].replace(",",".")):{"distance":float(row[i+1].replace(",",".")),
 																	"occluded":bool(int(row[i+2]))}
 									for i in range(7,120*3+7,3)}
+
 		else:
 			step['world_model_long'] = {float(row[i].replace(",",".")):float(row[i+1].replace(",",".")) for i in range(7,120*2+7,2)}
 		#step['world_model_short'] = {float(row[i].replace(",",".")):float(row[i+1].replace(",",".")) for i in range(120*2+7,120*2+120*2+7,2)}
@@ -367,7 +365,7 @@ class DiscreteFilter_bigram():
 
 class GaussianFilter:
 
-	def __init__(self, classifier_type, feature_type, template_dataset=None, sequential=True):
+	def __init__(self, classifier_type, feature_type, template_dataset=None):
 		self.state_dim = 4
 		self.classifier = Classifier()
 		self.classifier_type = classifier_type
@@ -383,31 +381,87 @@ class GaussianFilter:
 		if self.feature_type == "template" and template_dataset==None:
 			raise ValueError(f"Template dataset cannot be {template_dataset}")
 
-		def pre_compute_rotated_template(z):
-			tm = []
-			v1 = deque(list(z.values()))
-
-			for _ in range(120):
-				v1.rotate(1)
-				tm.append(list(v1))
-
-			return np.array(tm)
-
-
 		if self.feature_type == "template":
 			self.templates = {}
 			for step in template_dataset:
 				z = self.classifier.preProcess(step['world_model_long'], 3)
 				if step['true_class'] not in self.templates:
-					self.templates[step['true_class']] = [{"pre_rotated":pre_compute_rotated_template(z),
-														   "normal_measurement":z}]
+					self.templates[step['true_class']] = [{"pre_rotated":self.pre_compute_rotated_template(z),
+														   "z":z}]
 				else:
-					self.templates[step['true_class']].append({"pre_rotated":pre_compute_rotated_template(z),
-															   "normal_measurement":z})
+					self.templates[step['true_class']].append({"pre_rotated":self.pre_compute_rotated_template(z),
+															   "z":z})
 
-	# learn from %10 steps
-	# counts start from 1 (add-one smoothing)
+	@staticmethod
+	def pre_compute_rotated_template(z):
+		tm = []
+		v1 = deque([data["distance"] for data in list(z.values())])
+
+		for _ in range(len(v1)):
+			tm.append(list(v1))
+			v1.rotate(1)
+
+		return np.array(tm)
+
+	@staticmethod
+	def min_distance(tm, z, handle_occlusion):
+		z_distance = np.array([data["distance"] for data in z.values()])
+
+		if handle_occlusion == True:
+			z_occluded = [data["occluded"] for data in z.values()]
+			z_mask = np.array(z_occluded)
+			z_sliced = z_distance[~z_mask]
+
+			tm_sliced = tm[:,np.where(~z_mask == True)[0].tolist()]
+			tm_sliced_unique = np.unique(tm_sliced, axis=0)
+			tm = tm_sliced_unique-z_sliced
+
+		else:
+			tm = tm - z_distance
+
+
+		mins = np.diag(tm@tm.T)
+		return np.min(mins)
+
+	@staticmethod
+	def naive_min_distance(tm, z, handle_occlusion):
+		tm_distance = np.array([data["distance"] for data in tm.values()])
+		z_distance = deque([data["distance"] for data in z.values()])
+		z_data = deque(list(z.values()))
+		convolutions = []
+		
+		if handle_occlusion == True:
+			z_data_rotations = []
+			for _ in range(len(z_data)):
+				z_data_rotations.append(list(z_data))
+				z_data.rotate(1)
+
+			for z_data_rotated in z_data_rotations:
+				filtered_z_distance = []
+				filtered_tm_distance = []
+				for i in range(len(z_data_rotated)):
+					if z_data_rotated[i]["occluded"] == False:
+						filtered_z_distance.append(z_data_rotated[i]["distance"])
+						filtered_tm_distance.append(tm_distance[i])
+
+				diff = np.array(filtered_z_distance) - np.array(filtered_tm_distance)
+				convolutions.append(np.inner(diff,diff))
+				
+		else:
+			z_distance_rotations = []
+			for _ in range(len(z_distance)):
+				z_distance_rotations.append(list(z_distance))
+				z_distance.rotate(1)
+
+			for z_distance_rotated in z_distance_rotations:
+				diff = np.array(z_distance_rotated) - tm_distance
+				convolutions.append(np.inner(diff,diff))
+
+		return min(convolutions)
+
 	def estimateTransitionModel(self, dataset):
+		# learn from %10 steps
+		# counts start from 1 (add-one smoothing)
 		joint = np.ones((self.state_dim, self.state_dim))
 
 		for i in range(len(dataset)-10):
@@ -437,7 +491,7 @@ class GaussianFilter:
 			X_train,y_train = [],[]
 			for step in tqdm(dataset):
 				z = self.classifier.preProcess(step['world_model_long'],3)
-				X_train.append(self.extractFeature(z))
+				X_train.append(self.extractFeature(z, handle_occlusion=False)) #perché nel train non ci sono occlusioni (robot=1)
 				y_train.append(self.classifier.classlbl_to_id[step['true_class']])
 
 			if scale:
@@ -461,30 +515,37 @@ class GaussianFilter:
 				with open(f"data/train/scaler_{self.feature_type}.pickle",'wb') as f:
 					pickle.dump(self.scaler, f)
 
-		if self.classifier_type == "linear":
-			for i in range(self.clf.means_.shape[0]):
-				self.parameters[self.classifier.id_to_classlbl[i]] = {'mu':self.clf.means_[i,:].reshape((-1,1)),
-																	  'sigma_inv':np.linalg.inv(self.clf.covariance_),
-																	  'sigma':self.clf.covariance_}
-		elif self.classifier_type == "quadratic":
-			for i in range(self.clf.means_.shape[0]):
-				self.parameters[self.classifier.id_to_classlbl[i]] = {'mu':self.clf.means_[i,:].reshape((-1,1)),
-																	  'sigma_inv':np.linalg.pinv(self.clf.covariance_[i]),
-																	  'sigma':self.clf.covariance_[i]}
+		# if self.classifier_type == "linear":
+		# 	for i in range(self.clf.means_.shape[0]):
+		# 		self.parameters[self.classifier.id_to_classlbl[i]] = {'mu':self.clf.means_[i,:].reshape((-1,1)),
+		# 															  'sigma_inv':np.linalg.inv(self.clf.covariance_),
+		# 															  'sigma':self.clf.covariance_}
+		# elif self.classifier_type == "quadratic":
+		# 	for i in range(self.clf.means_.shape[0]):
+		# 		self.parameters[self.classifier.id_to_classlbl[i]] = {'mu':self.clf.means_[i,:].reshape((-1,1)),
+		# 															  'sigma_inv':np.linalg.pinv(self.clf.covariance_[i]),
+		# 															  'sigma':self.clf.covariance_[i]}
 
-	def extractFeature(self, measurement):
+	def extractFeature(self, measurement, handle_occlusion):
 		if self.feature_type == "template":
-			return self.extractFeatureTemplate(measurement)
+			return self.extractFeatureTemplate(measurement, handle_occlusion)
 		elif self.feature_type == "geometricB":
-			return self.extractFeatureGeometricB(measurement)
+			return self.extractFeatureGeometricB(measurement, handle_occlusion)
 		elif self.feature_type == "geometricP":
 			return self.extractFeatureGeometricP(measurement)
 
-	def extractFeatureGeometricB(self, measurement):
+	def extractFeatureGeometricB(self, measurement, handle_occlusion):
 
 		Point = namedtuple('Point', 'x y')
 
-		v = [Point(d*np.cos(a),d*np.sin(a)) for a,d in measurement.items()]
+		if handle_occlusion == True:
+			v = [Point(data["distance"]*np.cos(a),data["distance"]*np.sin(a))
+				 for a,data in measurement.items() if data["occluded"] == False]
+		else:
+			v = [Point(data["distance"]*np.cos(a),data["distance"]*np.sin(a))
+				 for a,data in measurement.items()]
+
+
 		v.append(v[0])
 
 		# B.1 and B.2
@@ -558,14 +619,17 @@ class GaussianFilter:
 
 		# B.7 B.8 simply
 		diameters = []
-		d = list(measurement.values())
+		if handle_occlusion == True:
+			d = [data["distance"] for data in list(measurement.values()) if data["occluded"] == False]
+		else:
+			d = [data["distance"] for data in list(measurement.values())]
+
 		for i in range(len(d) - 60):
 			diameters.append(d[i]+d[i+59])
 
 		B7 = max(diameters)
 		B8 = min(diameters)
 
-		#return [B1/(np.pi*150)**2, B2/(2*np.pi*150), B3*((2*np.pi*150)/(np.pi*150)**2), B4, B5, B7/300, B8/40]
 		return [B1, B2, B3, B4, B5, B7, B8]
 
 	def extractFeatureGeometricP(self, measurement):
@@ -604,21 +668,8 @@ class GaussianFilter:
 
 		return [P1, P2, P5, P6, P11, P12, P13, P14, P16]
 
-	def extractFeatureTemplate(self, measurement):
+	def extractFeatureTemplate(self, measurement, handle_occlusion):
 
-		# def minDistance(value1, value2):
-		# 	distance_values = []
-		#
-		# 	for i in range(120):
-		# 		s = 0
-		# 		for v1,v2 in zip(value1,value2):
-		# 			s += v1*v1 - 2*v1*v2 + v2*v2
-		# 		distance_values.append(s)
-		#
-		# 		value2.insert(0, value2[-1])
-		# 		value2.pop()
-		#
-		# 	return min(distance_values)
 
 		# def minDistance(value1, value2):
 		# 	tm = []
@@ -634,29 +685,39 @@ class GaussianFilter:
 		# 	mins = np.diag(tm@tm.T)
 		# 	return np.min(mins)#/(120*150**2)
 
-		def minDistance(tm, value2):
-			value2 = np.array(value2)
-			tm = tm-value2
-			mins = np.diag(tm@tm.T)
-			return np.min(mins)#/(120*150**2)
+
+
+		# feature = []
+		# for class_lbl,templates_readings in self.templates.items():
+		# 	avg_min_distance = []
+		# 	for template_reading in templates_readings:
+		# 		avg_min_distance.append(minDistance(template_reading["pre_rotated"],list(measurement.values())))
+		#
+		# 	#print(class_lbl)
+		# 	#print(avg_min_distance)
+		#
+		# 	avg_min_distance = sum(avg_min_distance)/len(avg_min_distance)
+		# 	#avg_min_distance = min(avg_min_distance)
+		# 	feature.append(avg_min_distance)
 
 		feature = []
 		for class_lbl,templates_readings in self.templates.items():
 			avg_min_distance = []
 			for template_reading in templates_readings:
-				avg_min_distance.append(minDistance(template_reading["pre_rotated"],list(measurement.values())))
+				avg_min_distance.append(self.naive_min_distance(template_reading["z"],
+														  measurement,
+														  handle_occlusion))
+
 
 			#print(class_lbl)
 			#print(avg_min_distance)
 
-			avg_min_distance = sum(avg_min_distance)/len(avg_min_distance)
+			#avg_min_distance = sum(avg_min_distance)/len(avg_min_distance)
 			#avg_min_distance = min(avg_min_distance)
-			feature.append(avg_min_distance)
+			feature += avg_min_distance
 
 		return feature
 
-	# import warnings
-	# warnings.filterwarnings("error")
 	def gaussian(self, x, mu, sig):
 		mahalanobis = (x-mu).T@sig@(x-mu)
 		pdf = 0.0
@@ -716,16 +777,11 @@ class GaussianFilter:
 		else:
 			btt = btt.reshape((1,-1)).tolist()[0]
 
-		return pdfs, mahalas, bt_t_1, btt
-
+		return btt
 
 	def predict(self, belief):
 		argmax = np.argmax(np.array(belief))
 		return self.classifier.id_to_classlbl[argmax]
-
-	def predict_non_sequential(self, feature):
-		id = self.clf.predict(feature)[0]
-		return self.classifier.id_to_classlbl[id]
 
 class DiscreteFilter_count():
 
@@ -885,13 +941,6 @@ class DiscreteFilter_count():
 		argmax = np.argmax(np.array(belief))
 		return self.classifier.id_to_classlbl[argmax]
 
-def debug_extract_feature_template():
-	template = loadDataset("data/train/template.csv", "data/train/train_map_ground_truth.pickle")
-	filter = GaussianFilter("linear", "template", template)
-	feature = filter.extractFeature(filter.templates["I"][1]["normal_measurement"])
-	print(list(filter.templates.keys()))
-	pprint(feature)
-
 def draw_distribution_for_single_template_feature():
 	train = loadDataset("data/train/unstructured.csv",
 						"data/train/train_map_ground_truth.pickle")
@@ -937,39 +986,7 @@ def debug_extract_feature_count():
 	pprint(feature)
 
 if __name__ == '__main__':
-	import matplotlib.pyplot as plt
-
-	# train = loadDataset("data/train/unstructured.csv",
-	# 					"data/train/train_map_ground_truth.pickle")
-	#
-	# edges = range(10,160,10)
-	# filter_min, filter_max = 10, 160
-	# gap = 10
-	#
-	# print(list(edges))
-	#
-	# filter = DiscreteFilter_count(edges, gap, filter_min, filter_max)
-	# filter.estimateObservationModel(train)
-	# pprint(filter.observation_model)
-	#
-	# c = Classifier()
-	# print(c.classlbl_to_id)
-	# print(c.id_to_classlbl)
-
-
-	debug_extract_feature_count()
-
-
-
-	# # 1D beam lengths histogram
-	# # fig, axs = plt.subplots(1, 4, sharey=True)
-	# #
-	# # for i,(k,vs) in enumerate(class_to_beamlenghts.items()):
-	# # 	axs[i].hist([v for v in vs if v!="*"], bins = 15, density=True)
-	# # 	axs[i].set(title=k)
-	# #
-	# # plt.show()
-	#
+	pass
 
 
 

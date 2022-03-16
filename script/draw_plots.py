@@ -47,7 +47,7 @@ def plot_test_metrics_compound():
     classifier = Classifier()
     fig, ax = plt.subplots()
     # per raccogliere i nomi dei metrics .pickle (non importa da dove, quì ho scelto 1)
-    metrics_files = [f_name for f_name in os.listdir("data/test/1/") if "geometricB_s" in f_name]
+    metrics_files = [f_name for f_name in os.listdir("data/test/1/") if "linear_geometricB" in f_name]
 
     # average run accuracy vs n of robots
     table = {}

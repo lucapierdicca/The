@@ -103,6 +103,7 @@ argos_file = "wall_test.argos"
 n_run = 30
 n_robot = [1,2,5,10,20,30]
 
+
 root_seed = 123
 random.seed(root_seed)
 runs_seeds = random.sample(range(5000), k=n_run*len(n_robot))

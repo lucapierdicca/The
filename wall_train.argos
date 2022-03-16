@@ -9,7 +9,7 @@
 
     <system threads="1" />
 
-    <experiment length="5000" ticks_per_second="10" random_seed="428" />
+    <experiment length="10000" ticks_per_second="10" random_seed="428" />
   </framework>
 
 
@@ -32,7 +32,7 @@
         <positioning implementation="default" />
       </sensors>
 
-      <params alpha="100" delta="0.1" velocity="5" file_name="data/train/unstr.csv" collect_data="true" />
+      <params alpha="100" delta="0.1" velocity="5" file_name="data/train/unstructured_occluded_2.csv" collect_data="true" />
     </footbot_wall_controller>
 
   </controllers>

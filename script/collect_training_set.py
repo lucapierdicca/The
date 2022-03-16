@@ -32,7 +32,7 @@ for _ in root.iter("system"): system = _
 
 params.attrib["collect_data"] = "true"
 system.attrib["threads"] = "1"
-experiment.attrib["length"] = "5000" # which means 50000 step
+experiment.attrib["length"] = "10000" # which means 100000 step
 
 for i,nr in enumerate(n_robot):
 
@@ -45,6 +45,6 @@ for i,nr in enumerate(n_robot):
         print(f"Experiment {i+1}_{nr}_{s}")
         experiment.attrib["random_seed"] = str(s)
         entity.attrib["quantity"] = str(nr)
-        params.attrib["file_name"] =  f"data/train/unstr.csv"
+        params.attrib["file_name"] =  f"data/train/unstructured_occluded_2.csv"
         tree.write(argos_file)
         os.system("argos3 -c "+argos_file)

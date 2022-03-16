@@ -6,17 +6,18 @@ import os
 from pprint import pprint
 
 
-def produce_test_metrics(classifier_type, feature_type, n_robots=[1], load_model=True, sequential=True):
+def produce_test_metrics(classifier_type, feature_type, n_robots=[1], load_model=True, handle_occlusion=False):
     # training and/or loading models for the HMM
-    train = loadDataset("data/train/unstructured.csv",
+    train = loadDataset("data/train/unstructured_occluded_2.csv",
                         "data/train/train_map_ground_truth.pickle")
     print("train: ", len(train))
 
     classifier = Classifier()
 
     if feature_type == "template":
-        template = loadDataset("data/train/template.csv",
+        template = loadDataset("data/train/template2.csv",
                                "data/train/train_map_ground_truth.pickle")
+        template = [step for step in template if step["clock"] == 10]
         print("template: ", len(template))
         filter = GaussianFilter(classifier_type, feature_type, template)
     else:
@@ -51,41 +52,40 @@ def produce_test_metrics(classifier_type, feature_type, n_robots=[1], load_model
             test = loadDataset(f"data/test/{r}/{exp}",
                                "data/test/test_map_ground_truth.pickle",
                                row_range=[id * (10000 - 9), id * (10000 - 9) + (10000 - 9)])
-            belief = [0.25, 0.25, 0.25, 0.25]  # [V C I G]
-            y_pred, x_pred, y_true, belief_evo, obs_evo, outliers_data = [], [], [], [], [], []
-            for index_in_test, step in enumerate(tqdm(test)):
-                if step['clock'] % 10 == 0:
-                    x = [step['x'], step['y']]
-                    x_pred.append(x)
-                    y_true.append(step['true_class'])
-                    z = classifier.preProcess(step['world_model_long'], 3)
-                    feature = filter.extractFeature(z)
-                    feature_std = filter.scaler.transform([feature])  # standardize
 
-                    if sequential == True:
-                        b = []
-                        b.append(belief)
-                        pdfs, mahalas, bt_t_1, belief = filter.update(belief, feature_std[0], log=False)
-                        b += [bt_t_1, belief]
-                        #print(bt_t_1, belief)
-                        prediction = filter.predict(belief)
+            belief = [0.25, 0.25, 0.25, 0.25]  # [V C I G]
+            y_pred, valid_pred, x_pred, y_true = [], [], [], []
+            prediction = "C"
+            for step in tqdm(test):
+                if step['clock'] % 10 == 0:
+                    x_pred.append([step['x'], step['y']])
+                    y_true.append(step['true_class'])
+
+                    occlusion_data = [data["occluded"] for data in list(step["world_model_long"].values())]
+
+                    if handle_occlusion == True:
+                        valid = False
+                        if(occlusion_data.count(True)/len(occlusion_data) < 0.5):
+                            z = classifier.preProcess(step['world_model_long'], 3)
+                            feature = filter.extractFeature(z, handle_occlusion=handle_occlusion)
+                            feature_std = filter.scaler.transform([feature])  # standardize
+                            belief = filter.update(belief, feature_std[0], log=True)
+                            prediction = filter.predict(belief)
+                            valid = True
+                        else:
+                            print(f"INVALID {prediction}")
 
                     else:
-                        prediction = filter.predict_non_sequential(feature_std)
+                        z = classifier.preProcess(step['world_model_long'], 3)
+                        feature = filter.extractFeature(z, handle_occlusion=handle_occlusion)
+                        feature_std = filter.scaler.transform([feature])  # standardize
+                        belief = filter.update(belief, feature_std[0], log=True)
+                        prediction = filter.predict(belief)
+                        valid = True
 
-                    obs_evo.append([pdfs, mahalas])
-                    belief_evo.append(b)
                     y_pred.append(prediction)
-                    if (len(set(pdfs)) == 1 and pdfs[0] == 0.01):
-                        print("outlier")
-                        outliers_data.append({"index_in_test": index_in_test,
-                                              "clock": step["clock"],
-											  "robot_position":x,
-                                              "robot_orientation":step["theta"],
-											  "mahalas":mahalas,
-                                              "z": z,
-                                              "feature": feature,
-                                              "feature_std": feature_std})
+                    valid_pred.append(valid)
+
 
             report = classifier.classification_report_(y_true, y_pred, output_dict=True)
             confusion = classifier.confusion_matrix_(y_true, y_pred)
@@ -97,21 +97,15 @@ def produce_test_metrics(classifier_type, feature_type, n_robots=[1], load_model
                        "confusion": confusion,
                        "y_true": y_true,
                        "y_pred": y_pred,
+                       "valid_pred":valid_pred,
                        "x_pred": x_pred,
-                       "belief_evo": belief_evo,
-                       "obs_evo": obs_evo,
                        "classifier_type": classifier_type,
-                       "feature_type": feature_type,
-                       "sequential": "s" if sequential else "ns",
-                       "outliers_data": outliers_data}
+                       "feature_type": feature_type}
 
             exp_metrics.append(metrics)
 
         # dump test metrics
-        if sequential == True:
-            file_name = f"data/test/{r}/exp_metrics_{classifier_type}_{feature_type}_s.pickle"
-        else:
-            file_name = f"data/test/{r}/exp_metrics_{classifier_type}_{feature_type}_ns.pickle"
+        file_name = f"data/test/{r}/exp_metrics_{classifier_type}_{feature_type}.pickle"
         with open(file_name, 'wb') as f:
             pickle.dump(exp_metrics, f)
 
@@ -119,12 +113,14 @@ def produce_test_metrics(classifier_type, feature_type, n_robots=[1], load_model
 if __name__ == '__main__':
     classifier_type = ["linear"]  # ["linear", "quadratic"]
     feature_type = ["geometricB"]  # ["template", "geometricP", "geometricB"]
-    load_model = False
-    sequential = True
+    load_model = True
     n_robots = [1]
+    handle_occlusion = False
 
     for c in classifier_type:
         for f in feature_type:
             print(c, f)
-            produce_test_metrics(c, f, load_model=load_model,
-                                 n_robots=n_robots, sequential=sequential)
+            produce_test_metrics(c, f,
+                                 load_model=load_model,
+                                 n_robots=n_robots,
+                                 handle_occlusion=handle_occlusion)
