@@ -1,8 +1,8 @@
 from pprint import pprint
-from draw_map import draw_map_templates
-from utils import loadDataset, GaussianFilter
-from utils import Classifier
-from utils import Point
+from script.draw_map import draw_map_templates
+from script.utils import load_dataset, GaussianFilter
+from script.utils import Classifier
+from script.utils import Point
 
 import time
 
@@ -10,8 +10,8 @@ import time
 
 def test_extract_feature_template():
 	# controllare che i feature template siano calcolati bene nel filtro
-	template = loadDataset("data/train/template2.csv",
-						   "data/train/train_map_ground_truth.pickle")
+	template = load_dataset("data/train/template2.csv",
+						   "data/train/train_map_2_ground_truth.pickle")
 	template = [step for step in template if step["clock"] == 10]
 
 	filter = GaussianFilter("linear", "template", template)
@@ -26,16 +26,25 @@ def test_extract_feature_template():
 
 def test_vis_collected_template():
 	# controllare by visual inspection che i template collezionati siano ok
-	template = loadDataset("data/train/template2.csv",
+	template = load_dataset("data/train/template2.csv",
 						   "data/train/train_map_2_ground_truth.pickle")
+
 	#template = [step for step in template if step["clock"] == 10]
+
 	classlbl_to_template = {}
 	for step in template:
-		if step["clock"] == 10 and step["true_class"] not in classlbl_to_template:
-			classlbl_to_template[step["true_class"]] = step
-	template = list(classlbl_to_template.values())
+		if step["clock"] == 10:
+			if step["true_class"] not in classlbl_to_template:
+				classlbl_to_template[step["true_class"]] = [step]
+			else:
+				if len(classlbl_to_template[step["true_class"]]) < 9:
+					classlbl_to_template[step["true_class"]].append(step)
 
-	print(len(template))
+	template = []
+	for v in classlbl_to_template.values():
+		template += v
+
+	pprint(type(template))
 
 	classifier = Classifier()
 	rp, ro, me = [], [], []

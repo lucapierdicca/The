@@ -1,21 +1,21 @@
 import random
 import pickle
 from tqdm import tqdm
-from utils import Classifier, GaussianFilter, loadDataset, Point
+from utils import Classifier, GaussianFilter, load_dataset, Point
 import os
 from pprint import pprint
 
 
 def produce_test_metrics(classifier_type, feature_type, n_robots=[1], load_model=True, handle_occlusion=False):
     # training and/or loading models for the HMM
-    train = loadDataset("data/train/unstructured_occluded_2.csv",
+    train = load_dataset("data/train/unstructured_occluded_2.csv",
                         "data/train/train_map_ground_truth.pickle")
     print("train: ", len(train))
 
     classifier = Classifier()
 
     if feature_type == "template":
-        template = loadDataset("data/train/template2.csv",
+        template = load_dataset("data/train/template2.csv",
                                "data/train/train_map_ground_truth.pickle")
         template = [step for step in template if step["clock"] == 10]
         print("template: ", len(template))
@@ -49,7 +49,7 @@ def produce_test_metrics(classifier_type, feature_type, n_robots=[1], load_model
         for exp in exps:
             id = random.choice(range(r))
             # fb_id = f"fb_{id}"
-            test = loadDataset(f"data/test/{r}/{exp}",
+            test = load_dataset(f"data/test/{r}/{exp}",
                                "data/test/test_map_ground_truth.pickle",
                                row_range=[id * (10000 - 9), id * (10000 - 9) + (10000 - 9)])
 

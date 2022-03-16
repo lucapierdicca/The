@@ -86,10 +86,10 @@ for class_lbl,boundaries in map_ground_truth.items():
         vertices_mid_points = [(vertices_prime[i%4,:] + vertices_prime[(i+1)%4,:]) / 2.0 for i in range(4)]
 
         # griglia 3x3 piccola
-        #template_positions = list(vertices_prime) + vertices_mid_points + [c]
+        template_positions = list(vertices_prime) + vertices_mid_points + [c]
 
         # solo il centro
-        template_positions = [c]
+        # template_positions = [c]
 
         if class_lbl not in class_lbl_to_template_positions:
             class_lbl_to_template_positions[class_lbl] = [template_positions]

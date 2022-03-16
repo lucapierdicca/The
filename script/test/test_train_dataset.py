@@ -1,9 +1,9 @@
-from utils import loadDataset
+from script.utils import load_dataset
 from collections import Counter
-from utils import Point
+from script.utils import Point
 
-def test_train_info():
-    train = loadDataset("data/train/unstructured_occluded_3.csv",
+def test_info():
+    train = load_dataset("data/train/unstructured_occluded_3.csv",
                         "data/train/train_map_2_ground_truth.pickle")
     print("train: ", len(train))
 
@@ -12,5 +12,5 @@ def test_train_info():
     print(Counter(y_true))
 
 if __name__ == '__main__':
-    test_train_info()
+    test_info()
 

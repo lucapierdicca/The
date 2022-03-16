@@ -5,13 +5,13 @@ from bisect import bisect_left
 
 from tqdm import tqdm
 
-from utils import DiscreteFilter, loadDataset, Point
+from utils import DiscreteFilter, load_dataset, Point
 from pprint import pprint
 import numpy as np
 from matplotlib import pyplot as plt
 
 def compute_stationary_distro():
-    train = loadDataset("data/train/unstructured.csv",
+    train = load_dataset("data/train/unstructured.csv",
                         "data/train/train_map_ground_truth.pickle")
 
     filter = DiscreteFilter()
@@ -43,7 +43,7 @@ def compute_stationary_distro():
 def produce_test_metrics(n_robots=[1]):
 
     print("Load dataset")
-    train = loadDataset("data/train/unstructured.csv",
+    train = load_dataset("data/train/unstructured.csv",
                         "data/train/train_map_ground_truth.pickle")
 
     edges = range(10,160,10)
@@ -71,7 +71,7 @@ def produce_test_metrics(n_robots=[1]):
         for exp in exps:
             id = random.choice(range(r))
             # fb_id = f"fb_{id}"
-            test = loadDataset(f"data/test/{r}/{exp}",
+            test = load_dataset(f"data/test/{r}/{exp}",
                                "data/test/test_map_ground_truth.pickle",
                                row_range=[id * (10000 - 9), id * (10000 - 9) + (10000 - 9)])
             belief = [0.25,0.25,0.25,0.25]  # parte in C [I C V G]
@@ -141,7 +141,7 @@ if __name__ == "__main__":
 
 
     # print("Load dataset")
-    # train = loadDataset("data/train/unstructured.csv",
+    # train = load_dataset("data/train/unstructured.csv",
     #                     "data/train/train_map_ground_truth.pickle")
     #
     # edges = range(10,160,10)

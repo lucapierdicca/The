@@ -13,32 +13,39 @@ from bisect import bisect_left
 from tqdm import tqdm
 
 from draw_map import draw_map_test_trajectories
-from utils import Classifier, loadDataset, GaussianFilter
+from utils import Classifier, load_dataset, GaussianFilter
 import numpy as np
 
 
 
 Point = namedtuple('Point','x y')
 
-n_robots = [1]
+n_robots = [20]
 feature_type = "geometricB"  # ["template", "geometricP", "geometricB"]
-handle_occlusion = False
-load_model = False
+handle_occlusion = True
+load_model = True
 
-train = loadDataset("data/train/unstructured_occluded_3.csv",
+train = load_dataset("data/train/unstructured_occluded_3.csv",
                     "data/train/train_map_2_ground_truth.pickle")
 
 print("train: ", len(train))
 
 if feature_type == "template":
-    template = loadDataset("data/train/template2.csv",
+    template = load_dataset("data/train/template2.csv",
                            "data/train/train_map_2_ground_truth.pickle")
     #template = [step for step in template if step["clock"] == 10]
     classlbl_to_template = {}
     for step in template:
-        if step["clock"] == 10 and step["true_class"] not in classlbl_to_template:
-            classlbl_to_template[step["true_class"]] = step
-    template = list(classlbl_to_template.values())
+        if step["clock"] == 10:
+            if step["true_class"] not in classlbl_to_template:
+                classlbl_to_template[step["true_class"]] = [step]
+            else:
+                if len(classlbl_to_template[step["true_class"]]) < 9:
+                    classlbl_to_template[step["true_class"]].append(step)
+
+    template = []
+    for v in classlbl_to_template.values():
+        template += v
     print("template: ", len(template))
 else:
     template = None
@@ -71,15 +78,15 @@ def train_test():
         # clf = LinearDiscriminantAnalysis(store_covariance=True)
         # clf.fit(X_train, y_train)
 
-        with open(f"model_svc_template_center_{feature_type}.pickle",'wb') as f:
+        with open(f"model_svc_{feature_type}.pickle",'wb') as f:
             pickle.dump(clf, f)
-        with open(f"scaler_svc_template_center_{feature_type}.pickle",'wb') as f:
+        with open(f"scaler_svc_{feature_type}.pickle",'wb') as f:
             pickle.dump(scaler, f)
 
     else:
-        with open(f"model_svc_template_center_{feature_type}.pickle","rb") as f:
+        with open(f"model_svc_{feature_type}.pickle","rb") as f:
             clf = pickle.load(f)
-        with open(f"scaler_svc_template_center_{feature_type}.pickle","rb") as f:
+        with open(f"scaler_svc_{feature_type}.pickle","rb") as f:
             scaler = pickle.load(f)
 
     print(clf.classes_)
@@ -95,7 +102,7 @@ def train_test():
         for j,exp in enumerate(exps):
             id = random.choice(range(r))
 
-            test = loadDataset(f"data/test/{r}/{exp}",
+            test = load_dataset(f"data/test/{r}/{exp}",
                                "data/test/test_map_ground_truth.pickle",
                                row_range=[id * (10000 - 9), id * (10000 - 9) + (10000 - 9)])
 
@@ -167,7 +174,7 @@ def MultinomialNB_traintest():
         for j,exp in enumerate(exps):
             id = random.choice(range(r))
 
-            test = loadDataset(f"data/test/{r}/{exp}",
+            test = load_dataset(f"data/test/{r}/{exp}",
                                "data/test/test_map_ground_truth.pickle",
                                row_range=[id * (10000 - 9), id * (10000 - 9) + (10000 - 9)])
 
@@ -219,7 +226,7 @@ def SVMGeometricB_traintest():
         for j,exp in enumerate(exps):
             id = random.choice(range(r))
 
-            test = loadDataset(f"data/test/{r}/{exp}",
+            test = load_dataset(f"data/test/{r}/{exp}",
                                "data/test/test_map_ground_truth.pickle",
                                row_range=[id * (10000 - 9), id * (10000 - 9) + (10000 - 9)])
 

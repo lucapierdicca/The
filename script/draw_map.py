@@ -2,8 +2,8 @@ from pprint import pprint
 
 import matplotlib.pyplot as plt
 import pickle
-from utils import Point, GaussianFilter, Classifier
 import numpy as np
+from utils import Point
 
 
 def draw_map(map_path, wall_path, name):
@@ -168,7 +168,7 @@ def draw_map_templates(robot_positions, robot_orientations, measurements):
 
 
 if __name__ == '__main__':
-    from utils import loadDataset
+    from utils import load_dataset
 
     #draw_map_templates()
 
@@ -185,7 +185,7 @@ if __name__ == '__main__':
     # print(len(y_pred))
     # draw_map_test_trajectories(trajectory ,y_pred)
 
-    draw_map("data/test/test_map_ground_truth.pickle",
-             "data/test/test_map_wall_boundary_vertices.pickle", "")
+    draw_map("data/train/train_map_2_ground_truth.pickle",
+             "data/train/train_map_2_wall_boundary_vertices.pickle", "")
 
 

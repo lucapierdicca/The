@@ -2,7 +2,7 @@ from collections import deque
 from pprint import pprint
 import pickle
 from matplotlib import pyplot as plt
-from utils import loadDataset, Classifier, Point
+from utils import load_dataset, Classifier, Point
 from sklearn.cluster import KMeans, MeanShift
 from sklearn import preprocessing
 import numpy as np
@@ -144,7 +144,7 @@ def minDistance(tm, value2):
 
 # load dataset
 classifier = Classifier()
-train = loadDataset("data/train/unstructured.csv",
+train = load_dataset("data/train/unstructured.csv",
                     "data/train/train_map_ground_truth.pickle")
 print("train: ", len(train))
 

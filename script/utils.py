@@ -22,7 +22,7 @@ def toRadians(degree):
 def norm(vector):
 	return np.linalg.norm(vector)
 
-def isInside(p: np.array, poly_boundary_vertices: list[Point]):
+def is_inside(p: np.array, poly_boundary_vertices: list[Point]):
 
 	turn_angle = 0.0
 	closed_poly_boundary_vertices = list(poly_boundary_vertices) + [poly_boundary_vertices[0]]
@@ -51,7 +51,7 @@ def isInside(p: np.array, poly_boundary_vertices: list[Point]):
 	else:
 		return False
 
-def loadDataset(dataset_path, map_ground_truth_path, row_range=None):
+def load_dataset(dataset_path, map_ground_truth_path, row_range=None):
 
 	with open(map_ground_truth_path,"rb") as f:
 		map_ground_truth = pickle.load(f)
@@ -86,10 +86,11 @@ def loadDataset(dataset_path, map_ground_truth_path, row_range=None):
 		p = np.array([[step['x']],[step['y']]])
 		for classlbl, data in map_ground_truth.items():
 			for bv in data['poly_boundary_vertices']:
-				if isInside(p, bv):
+				if is_inside(p, bv):
 					step['true_class'] = classlbl
 
 		if step['true_class'] not in ['V','C','I','G','S']:
+			print(p)
 			print("WARNING: no true class. Skip this step.")
 			continue
 
@@ -942,9 +943,9 @@ class DiscreteFilter_count():
 		return self.classifier.id_to_classlbl[argmax]
 
 def draw_distribution_for_single_template_feature():
-	train = loadDataset("data/train/unstructured.csv",
+	train = load_dataset("data/train/unstructured.csv",
 						"data/train/train_map_ground_truth.pickle")
-	template= loadDataset("data/train/template.csv", "data/train/train_map_ground_truth.pickle")
+	template= load_dataset("data/train/template.csv", "data/train/train_map_ground_truth.pickle")
 	filter = GaussianFilter("linear", "template", template)
 
 	X, y_true = [], []
@@ -974,7 +975,7 @@ def draw_distribution_for_single_template_feature():
 	plt.show()
 
 def debug_extract_feature_count():
-	# train = loadDataset("data/train/unstructured.csv",
+	# train = load_dataset("data/train/unstructured.csv",
 	# 					"data/train/train_map_ground_truth.pickle")
 	filter_min, filter_max = 10, 160
 	gap = 1
