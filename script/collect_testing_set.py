@@ -105,8 +105,7 @@ argos_proto_file = "wall_proto.argos"
 argos_file = "wall_test.argos"
 
 n_run = 30
-n_robot = [20]
-
+n_robot = [60]
 
 root_seed = 123
 random.seed(root_seed)
@@ -134,7 +133,7 @@ wall_boundary_vertices, box_tags = create_map_argos(parsed_ggb)
 #----------------------------------------------
 
 params.attrib["collect_data"] = "true"
-system.attrib["threads"] = "1"
+system.attrib["threads"] = "8"
 experiment.attrib["length"] = "1000"
 
 for b in box_tags:
@@ -145,16 +144,18 @@ dump_map_ground_truth(parsed_ggb)
 dump_map_wall_boundary_vertices(wall_boundary_vertices)
 
 for i,nr in enumerate(n_robot):
-
-    try:
-        os.mkdir("data/test/"+str(nr))
-    except OSError as error:
-        print(error)
-
     for j,s in enumerate(runs_seeds[i]):
-        print(f"Experiment {i+1}_{nr}_{s}")
+        for k in range(nr):
+            try:
+                os.mkdir(f"data/test/{nr}/experiments/{j+1}/")
+            except OSError as error:
+                print(error)
+
+for i,nr in enumerate(n_robot):
+    for j,s in enumerate(runs_seeds[i]):
+        print(f"Experiment {j+1}_{nr}_{s}")
         experiment.attrib["random_seed"] = str(s)
         entity.attrib["quantity"] = str(nr)
-        params.attrib["file_name"] =  f"data/test/{nr}/{nr}_{j+1}_{s}_data.csv"
+        params.attrib["file_name"] =  f"data/test/{nr}/experiments/{j+1}/"
         tree.write(argos_file)
         os.system("argos3 -c "+argos_file)

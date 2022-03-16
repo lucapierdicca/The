@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<geogebra format="5.0" version="5.0.721.0" app="classic" platform="w"  xsi:noNamespaceSchemaLocation="http://www.geogebra.org/apps/xsd/ggt.xsd" xmlns="" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" >
+<geogebra format="5.0" version="5.0.732.0" app="classic" platform="w"  xsi:noNamespaceSchemaLocation="http://www.geogebra.org/apps/xsd/ggt.xsd" xmlns="" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" >
 <defaults>
 <element type="point" label="Point (free)" default="10">
 	<show object="true" label="true"/>

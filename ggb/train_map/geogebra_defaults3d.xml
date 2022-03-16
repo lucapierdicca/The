@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<geogebra format="5.0" version="5.0.722.0" app="classic" platform="w"  xsi:noNamespaceSchemaLocation="http://www.geogebra.org/apps/xsd/ggt.xsd" xmlns="" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" >
+<geogebra format="5.0" version="5.0.732.0" app="classic" platform="w"  xsi:noNamespaceSchemaLocation="http://www.geogebra.org/apps/xsd/ggt.xsd" xmlns="" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" >
 <defaults>
 <element type="conic3d" label="Intersection curve" default="3150">
 	<coords ox="0" oy="0" oz="0" ow="1" vx="0" vy="0" vz="0" wx="0" wy="0" wz="0"/>

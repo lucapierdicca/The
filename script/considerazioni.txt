@@ -1,0 +1,74 @@
+Liscio vs. filtro vs. fixed-lag
+
+In generale per fare il confronto licio-filter-fixedlag non basta osservare le solite metriche precision e bla bla
+ma occorre osservare la confusion matrix e la mappa con le predizioni.
+Tendenzialmente attivare il filtro creerà le scie nei bordi a.k.a. errori di ritardo (vista la natura del filtro stesso)
+ma rispetto al liscio corregge gli errori lontano dai bordi (nel cso in cui il liscio facesse errore) e in particolare
+corregge gli errori non plausibili (blu -> rosso o rosso -> giallo), omogenizza.
+Questi errori di ritardo si possono vedere sulla mappa e non sonno molto importanti: se confondo le altre classi
+per il verde non è gravissimo se lo faccio vicino al bordo (una scia verde dal corridoio),
+se confondo il verde per le altre classi non è gravissimo se lo faccio vicino al bordo (una scia di altro colore nel corridio)
+ma in questo secondo caso se l'errore non avviene vicino al bordo allora è grave, specialmente se sto
+confondendo il verde con o giallo o rosso.
+Con il filtro attivato quindi tendenzialmente tutti vengono confusi per il verde
+(scie quando provengo dal corridoio e entro nelle altre classi)
+e il verde viene confuso per tutti
+(scie quando provengo dalle altre classi e entro nel corridoio)
+nella confusion matrix questo si vede sulla colonna del corridoio (tutti confusi per verde)
+e sulla riga del corridoio (verde confuso per tutti).
+Attivare il filtro giova quindi se gli errori di ritardo che crea sono di meno (o cmq poco gravi)
+di quelli che commette il liscio, e generalmente quelli del liscio sono gravi perchè confondono
+sia in modo implausibile che in posizioni lontane dai bordi e sono ti tipo a spot, non sono sequenze lunghe di errori.
+Mentre il filtro tendenzialmente non confonde in modo implausibile e confonde in posizioni vicine ai bordi (errori di ritardo).
+e riesce a correggere gli errori a spot omogeneizzando. Quando ci sono sequenze di errori però non ci riesce, ovviamente.
+
+Quindi il filtro tendenzialmente corregge gli errori del liscio ma inserisce gli errori di ritardo.
+Il fixed-lag invece tendenzialmente corregge gli errori del liscio e crea meno errori di ritardo
+per chè si basa sia sul passsato che sul futuro.
+Cmq sia in ogni caso le sequenze che si possono correggere devono essere di durata breve altrimenti non ci si riesce,
+e questo è dovuto dalla natura del modello sesso HMM che tiene modellizza correlazioni temporali
+con orizzonti molto ridotti quasi principalmente un ostep nel futuro e uno step nel passato (ipotesi markov)
+
+Vediamo esmpio di cm
+liscio
+[[  939    77     9     0     1]
+ [   62 21376    95    26    29]
+ [    4    71  1302    16     0]
+ [    0    56     0  4038     0]
+ [    0    41     0     0  1858]]
+ stessa con filtro
+ [[  990    36     0     0     0]
+  [  112 21241   117    44    74]
+  [    4    32  1340    17     0]
+  [    0    63     0  4031     0]
+  [    0    37     0     0  1862]]
+ stessa con fixed-lag
+ [[ 1009    11     0     0     0]
+  [   90 21244   110    33    49]
+  [    0    15  1362    16     0]
+  [    0    23     0  4056     0]
+  [    0    17     0     0  1875]]
+
+  rimaniamo con solo errori di ritardo (vedi 2 colonna e 2 riga), tranne i 16 in [S,V] quelli sono
+  deli implausibili che non si è riusciti a togliere per colpa del fatto che (ipotesi) l'osservazione
+  è super potente su V e vince sempre. Gli errori di ritardo 2 colonna rispetto a liscio diminuiscono mentre
+  gli errori di ritardo 2 riga prima aumentano e poi diminuiscono.
+
+  Per togliere gli errori di ritardo ovviamente occorrerebbe un sensor model estremamente preciso
+  nelle zone vicino ai bordi, cioè appena scavallo un bordo l'osservazine che faccio è già convintissima
+  sulla nuova classe. E' poossibile?
+
+
+
+Fixed-lag
+Ricordati che aumentare il futuro del fixed-lag non serve a molto o quasi a niente perché
+il modello HMM è influenzato sempre principalmente da le osservazioni *immediatamente* passate o future
+rispetto all'istante di cui si vuole fare inferenza. Ricordati le prove che hai fatto.
+Se ho una sequenza di osservazioni lunga 14 step [0,1,0,1,0,0,0,0,1,1,1,0,1,0]
+e voglio fare inferenza allo step 8 basandomi solo sul passato allora questa
+non cambierà molto se modifico l'osservazione al tempo 1 (molto lontao da 8), cambierà molto di più se modifico
+l'osservazione al tempo 7 (immediatamente vicino a 8). Questo è vero anche per il calcolo del messagio che viene
+dal futuro quando usi il fixed-lag, quindi di conseguenza un future di 2 step rispetto a un futuro di 100 step
+produce un beta_t praticamnete uguale. Quindi aumentare il futuro non serve a niente perché ancora,
+l'influenza maggiore per un tempo t è dovuta alle osservazioni al tempo t-1 e t+1 e va scemando molto rapidamente
+dovuta gli istanti più passati o piuù fututri.

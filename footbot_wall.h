@@ -10,6 +10,7 @@
 // actuators
 #include <argos3/plugins/robots/generic/control_interface/ci_differential_steering_actuator.h>
 #include <argos3/plugins/robots/foot-bot/control_interface/ci_footbot_distance_scanner_actuator.h>
+#include <argos3/plugins/robots/generic/control_interface/ci_range_and_bearing_actuator.h>
 
 //sensors
 #include <argos3/plugins/robots/foot-bot/control_interface/ci_footbot_distance_scanner_sensor.h>
@@ -41,6 +42,7 @@ private:
    CCI_FootBotDistanceScannerSensor* m_pcDistanceS;
    CCI_FootBotProximitySensor* m_pcProximity;
    CCI_RangeAndBearingSensor* m_pcRangeAndBearingS;
+   CCI_RangeAndBearingActuator* m_pcRangeAndBearingA;
    CCI_PositioningSensor* m_pcPositioning;
 
 
@@ -49,6 +51,7 @@ private:
    Real m_fWheelVelocity;
    CRange<CRadians> m_cGoStraightAngleRange;
    std::string file_name;
+   std::ofstream file;
    bool collect_data;
 
 
@@ -90,6 +93,7 @@ public:
       Real v_left;
       std::map<CRadians, struct angle_data> long_readings;
       std::map<CRadians, struct angle_data> short_readings;
+      std::string rab_concatenated_into_a_string;
    };
 
    std::vector<struct step_data> dataset_step_data;

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<geogebra format="5.0" version="5.0.722.0" app="classic" platform="w" id="6228de59-17d0-4cb6-8bc3-23059c9ecf25"  xsi:noNamespaceSchemaLocation="http://www.geogebra.org/apps/xsd/ggb.xsd" xmlns="" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" >
+<geogebra format="5.0" version="5.0.732.0" app="classic" platform="w" id="6228de59-17d0-4cb6-8bc3-23059c9ecf25"  xsi:noNamespaceSchemaLocation="http://www.geogebra.org/apps/xsd/ggb.xsd" xmlns="" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" >
 <gui>
 	<window width="2240" height="1156" />
 	<perspectives>
@@ -32,7 +32,7 @@
 <euclidianView>
 	<viewNumber viewNo="1"/>
 	<size  width="1205" height="1103"/>
-	<coordSystem xZero="633.91194134662" yZero="477.74725293905726" scale="46.89515912957981" yscale="46.89515912957898"/>
+	<coordSystem xZero="641.430357858449" yZero="737.7056052764492" scale="65.47310736287906" yscale="65.47310736287845"/>
 	<evSettings axes="true" grid="true" gridIsBold="false" pointCapturing="1" rightAngleStyle="1" checkboxSize="26" gridType="3"/>
 	<bgColor r="255" g="255" b="255"/>
 	<axesColor r="0" g="0" b="0"/>
@@ -41,11 +41,6 @@
 	<axis id="0" show="true" label="" unitLabel="" tickStyle="1" showNumbers="true"/>
 	<axis id="1" show="true" label="" unitLabel="" tickStyle="1" showNumbers="true"/>
 </euclidianView>
-<spreadsheetView>
-	<size  width="0" height="0"/>
-	<prefCellSize  width="70" height="0"/>
-	<selection  hScroll="0" vScroll="0" column="-1" row="-1"/>
-</spreadsheetView>
 <algebraView>
 	<mode val="3"/>
 </algebraView>
@@ -60,6 +55,7 @@
 <tableview min="0" max="0" step="0"/>
 <scripting blocked="false" disabled="false"/>
 <construction title="train_map" author="" date="">
+<expression label="C_{1}" exp="(0.7, 6.2)" type="point"/>
 <element type="point" label="C_{1}">
 	<show object="true" label="true"/>
 	<objColor r="21" g="101" b="192" alpha="0"/>
@@ -68,7 +64,7 @@
 	<animation step="0.1" speed="1" type="1" playing="false"/>
 	<pointSize val="5"/>
 	<pointStyle val="0"/>
-	<coords x="0.8" y="6.2" z="1"/>
+	<coords x="0.7" y="6.2" z="1"/>
 </element>
 <element type="point" label="v_1_15">
 	<show object="true" label="true"/>
@@ -90,6 +86,7 @@
 	<pointStyle val="0"/>
 	<coords x="5.2" y="6.2" z="1"/>
 </element>
+<expression label="v_1_14" exp="(0.7, 4.7)" type="point"/>
 <element type="point" label="v_1_14">
 	<show object="true" label="true"/>
 	<objColor r="21" g="101" b="192" alpha="0"/>
@@ -98,7 +95,7 @@
 	<animation step="0.1" speed="1" type="1" playing="false"/>
 	<pointSize val="5"/>
 	<pointStyle val="0"/>
-	<coords x="0.8" y="4.7" z="1"/>
+	<coords x="0.7" y="4.7" z="1"/>
 </element>
 <element type="point" label="v_0_06">
 	<show object="true" label="true"/>
@@ -110,6 +107,7 @@
 	<pointStyle val="0"/>
 	<coords x="-0.8" y="4.7" z="1"/>
 </element>
+<expression label="v_1_13" exp="(0.7, 0.7)" type="point"/>
 <element type="point" label="v_1_13">
 	<show object="true" label="true"/>
 	<objColor r="21" g="101" b="192" alpha="0"/>
@@ -118,7 +116,7 @@
 	<animation step="0.1" speed="1" type="1" playing="false"/>
 	<pointSize val="5"/>
 	<pointStyle val="0"/>
-	<coords x="0.8" y="0.7" z="1"/>
+	<coords x="0.7" y="0.7" z="1"/>
 </element>
 <element type="point" label="v_0_05">
 	<show object="true" label="true"/>
@@ -151,7 +149,7 @@
 	<pointStyle val="0"/>
 	<coords x="-0.8" y="-5.2" z="1"/>
 </element>
-<expression label="C_{2}" exp="(0.8, -5.2)" type="point"/>
+<expression label="C_{2}" exp="(0.7, -5.2)" type="point"/>
 <element type="point" label="C_{2}">
 	<show object="true" label="true"/>
 	<objColor r="21" g="101" b="192" alpha="0"/>
@@ -160,8 +158,9 @@
 	<animation step="0.1" speed="1" type="1" playing="false"/>
 	<pointSize val="5"/>
 	<pointStyle val="0"/>
-	<coords x="0.8" y="-5.2" z="1"/>
+	<coords x="0.7" y="-5.2" z="1"/>
 </element>
+<expression label="v_0_12" exp="(0.7, -6.7)" type="point"/>
 <element type="point" label="v_0_12">
 	<show object="true" label="true"/>
 	<objColor r="21" g="101" b="192" alpha="0"/>
@@ -170,7 +169,7 @@
 	<animation step="0.1" speed="1" type="1" playing="false"/>
 	<pointSize val="5"/>
 	<pointStyle val="0"/>
-	<coords x="0.8" y="-6.7" z="1"/>
+	<coords x="0.7" y="-6.7" z="1"/>
 </element>
 <command name="Polygon">
 	<input a0="v_0_01" a1="B" a2="C_{2}" a3="v_0_12"/>
@@ -209,7 +208,7 @@
 	<keepTypeOnTransform val="true"/>
 	<startStyle val="default"/>
 	<endStyle val="default"/>
-	<coords x="0" y="1.6" z="8.32"/>
+	<coords x="0" y="1.5" z="7.8"/>
 </element>
 <element type="segment" label="c">
 	<show object="true" label="false"/>
@@ -223,7 +222,7 @@
 	<keepTypeOnTransform val="true"/>
 	<startStyle val="default"/>
 	<endStyle val="default"/>
-	<coords x="1.5" y="0" z="-1.2000000000000002"/>
+	<coords x="1.5" y="0" z="-1.0499999999999998"/>
 </element>
 <element type="segment" label="d">
 	<show object="true" label="false"/>
@@ -237,7 +236,7 @@
 	<keepTypeOnTransform val="true"/>
 	<startStyle val="default"/>
 	<endStyle val="default"/>
-	<coords x="0" y="-1.6" z="-10.72"/>
+	<coords x="0" y="-1.5" z="-10.05"/>
 </element>
 <element type="point" label="v_0_02">
 	<show object="true" label="true"/>
@@ -249,6 +248,7 @@
 	<pointStyle val="0"/>
 	<coords x="-0.8" y="-0.8" z="1"/>
 </element>
+<expression label="v_0_11" exp="(0.7, -0.8)" type="point"/>
 <element type="point" label="v_0_11">
 	<show object="true" label="true"/>
 	<objColor r="21" g="101" b="192" alpha="0"/>
@@ -257,7 +257,7 @@
 	<animation step="0.1" speed="1" type="1" playing="false"/>
 	<pointSize val="5"/>
 	<pointStyle val="0"/>
-	<coords x="0.8" y="-0.8" z="1"/>
+	<coords x="0.7" y="-0.8" z="1"/>
 </element>
 <command name="Polygon">
 	<input a0="B" a1="v_0_02" a2="v_0_11" a3="C_{2}"/>
@@ -296,7 +296,7 @@
 	<keepTypeOnTransform val="true"/>
 	<startStyle val="default"/>
 	<endStyle val="default"/>
-	<coords x="0" y="1.6" z="1.2800000000000002"/>
+	<coords x="0" y="1.5" z="1.2000000000000002"/>
 </element>
 <element type="segment" label="f">
 	<show object="true" label="false"/>
@@ -310,7 +310,7 @@
 	<keepTypeOnTransform val="true"/>
 	<startStyle val="default"/>
 	<endStyle val="default"/>
-	<coords x="4.4" y="0" z="-3.52"/>
+	<coords x="4.4" y="0" z="-3.0799999999999996"/>
 </element>
 <element type="segment" label="c_1">
 	<show object="true" label="false"/>
@@ -324,7 +324,7 @@
 	<keepTypeOnTransform val="true"/>
 	<startStyle val="default"/>
 	<endStyle val="default"/>
-	<coords x="0" y="-1.6" z="-8.32"/>
+	<coords x="0" y="-1.5" z="-7.8"/>
 </element>
 <command name="Polygon">
 	<input a0="v_0_02" a1="v_0_05" a2="v_1_13" a3="v_0_11"/>
@@ -363,7 +363,7 @@
 	<keepTypeOnTransform val="true"/>
 	<startStyle val="default"/>
 	<endStyle val="default"/>
-	<coords x="0" y="1.6" z="-1.1199999999999999"/>
+	<coords x="0" y="1.5" z="-1.0499999999999998"/>
 </element>
 <element type="segment" label="i">
 	<show object="true" label="false"/>
@@ -377,7 +377,7 @@
 	<keepTypeOnTransform val="true"/>
 	<startStyle val="default"/>
 	<endStyle val="default"/>
-	<coords x="1.5" y="0" z="-1.2000000000000002"/>
+	<coords x="1.5" y="0" z="-1.0499999999999998"/>
 </element>
 <element type="segment" label="f_1">
 	<show object="true" label="false"/>
@@ -391,7 +391,7 @@
 	<keepTypeOnTransform val="true"/>
 	<startStyle val="default"/>
 	<endStyle val="default"/>
-	<coords x="0" y="-1.6" z="-1.2800000000000002"/>
+	<coords x="0" y="-1.5" z="-1.2000000000000002"/>
 </element>
 <expression label="J" exp="(-5, -0.8)" type="point"/>
 <element type="point" label="J">
@@ -613,7 +613,7 @@
 	<keepTypeOnTransform val="true"/>
 	<startStyle val="default"/>
 	<endStyle val="default"/>
-	<coords x="0" y="4.4" z="-3.0799999999999996"/>
+	<coords x="0" y="4.5" z="-3.15"/>
 </element>
 <element type="segment" label="n">
 	<show object="true" label="false"/>
@@ -641,7 +641,7 @@
 	<keepTypeOnTransform val="true"/>
 	<startStyle val="default"/>
 	<endStyle val="default"/>
-	<coords x="0" y="-4.4" z="-3.52"/>
+	<coords x="0" y="-4.5" z="-3.6"/>
 </element>
 <element type="segment" label="f_2">
 	<show object="true" label="false"/>
@@ -655,7 +655,7 @@
 	<keepTypeOnTransform val="true"/>
 	<startStyle val="default"/>
 	<endStyle val="default"/>
-	<coords x="-1.5" y="0" z="1.2000000000000002"/>
+	<coords x="-1.5" y="0" z="1.0499999999999998"/>
 </element>
 <command name="Polygon">
 	<input a0="v_0_05" a1="v_0_06" a2="v_1_14" a3="v_1_13"/>
@@ -694,7 +694,7 @@
 	<keepTypeOnTransform val="true"/>
 	<startStyle val="default"/>
 	<endStyle val="default"/>
-	<coords x="0" y="1.6" z="-7.5200000000000005"/>
+	<coords x="0" y="1.5" z="-7.050000000000001"/>
 </element>
 <element type="segment" label="r">
 	<show object="true" label="false"/>
@@ -708,7 +708,7 @@
 	<keepTypeOnTransform val="true"/>
 	<startStyle val="default"/>
 	<endStyle val="default"/>
-	<coords x="4" y="0" z="-3.2"/>
+	<coords x="4" y="0" z="-2.8000000000000003"/>
 </element>
 <element type="segment" label="s">
 	<show object="true" label="false"/>
@@ -722,7 +722,7 @@
 	<keepTypeOnTransform val="true"/>
 	<startStyle val="default"/>
 	<endStyle val="default"/>
-	<coords x="0" y="-1.6" z="1.1199999999999999"/>
+	<coords x="0" y="-1.5" z="1.0499999999999998"/>
 </element>
 <expression label="J_{1}" exp="(-6.1, 4.7)" type="point"/>
 <element type="point" label="J_{1}">
@@ -945,7 +945,7 @@
 	<keepTypeOnTransform val="true"/>
 	<startStyle val="default"/>
 	<endStyle val="default"/>
-	<coords x="-1.5" y="0" z="1.2000000000000006"/>
+	<coords x="-1.5" y="0" z="1.0499999999999998"/>
 </element>
 <element type="segment" label="g_2">
 	<show object="true" label="false"/>
@@ -959,7 +959,7 @@
 	<keepTypeOnTransform val="true"/>
 	<startStyle val="default"/>
 	<endStyle val="default"/>
-	<coords x="0" y="4.4" z="-27.28"/>
+	<coords x="0" y="4.5" z="-27.900000000000002"/>
 </element>
 <element type="segment" label="h_2">
 	<show object="true" label="false"/>
@@ -987,7 +987,7 @@
 	<keepTypeOnTransform val="true"/>
 	<startStyle val="default"/>
 	<endStyle val="default"/>
-	<coords x="0" y="-4.4" z="20.68"/>
+	<coords x="0" y="-4.5" z="21.150000000000002"/>
 </element>
 <command name="Polygon">
 	<input a0="v_0_06" a1="G_{1}" a2="C_{1}" a3="v_1_14"/>
@@ -1026,7 +1026,7 @@
 	<keepTypeOnTransform val="true"/>
 	<startStyle val="default"/>
 	<endStyle val="default"/>
-	<coords x="0" y="1.6" z="-9.920000000000002"/>
+	<coords x="0" y="1.5" z="-9.3"/>
 </element>
 <element type="segment" label="t_1">
 	<show object="true" label="false"/>
@@ -1040,7 +1040,7 @@
 	<keepTypeOnTransform val="true"/>
 	<startStyle val="default"/>
 	<endStyle val="default"/>
-	<coords x="1.5" y="0" z="-1.2000000000000006"/>
+	<coords x="1.5" y="0" z="-1.0499999999999998"/>
 </element>
 <element type="segment" label="a_1">
 	<show object="true" label="false"/>
@@ -1054,7 +1054,7 @@
 	<keepTypeOnTransform val="true"/>
 	<startStyle val="default"/>
 	<endStyle val="default"/>
-	<coords x="0" y="-1.6" z="7.5200000000000005"/>
+	<coords x="0" y="-1.5" z="7.050000000000001"/>
 </element>
 <expression label="v_0_09" exp="(6.7, 6.2)" type="point"/>
 <element type="point" label="v_0_09">

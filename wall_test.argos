@@ -7,9 +7,9 @@
   
   <framework>
 
-    <system threads="1" />
+    <system threads="8" />
 
-    <experiment length="1000" ticks_per_second="10" random_seed="835" />
+    <experiment length="1000" ticks_per_second="10" random_seed="2192" />
   </framework>
 
 
@@ -23,6 +23,7 @@
       <actuators>
         <differential_steering implementation="default" />
         <footbot_distance_scanner implementation="default" />
+        <range_and_bearing implementation="default" />
       </actuators>
 
       <sensors>
@@ -32,7 +33,7 @@
         <positioning implementation="default" />
       </sensors>
 
-      <params alpha="100" delta="0.1" velocity="5" file_name="data/test/20/20_30_835_data.csv" collect_data="true" />
+      <params alpha="100" delta="0.1" velocity="5" file_name="data/test/60/experiments/2/" collect_data="true" />
     </footbot_wall_controller>
 
   </controllers>
@@ -56,10 +57,10 @@
 
 
     <distribute>
-      <position method="uniform" min="-0.5,0,0" max="0.5,12.5,0" />
+      <position method="uniform" min="-0.5,-0.5,0" max="0.5,12.5,0" />
       <orientation method="gaussian" mean="0,0,0" std_dev="360,0,0" />
-      <entity quantity="20" max_trials="100" base_num="0">
-        <foot-bot id="fb_">
+      <entity quantity="60" max_trials="100" base_num="0">
+        <foot-bot id="fb_" rab_data_size="1">
           <controller config="fwc" />
         </foot-bot>
       </entity>
@@ -72,7 +73,7 @@
 
 
 
-  <box id="0" size="13.2,0.1,0.5" movable="false"> <body position="0.10000000000000009,-8.2,0" orientation="0,0,0" /> </box><box id="1" size="0.1,8.899999999999999,0.5" movable="false"> <body position="6.7,-3.7499999999999996,0" orientation="0,0,0" /> </box><box id="2" size="5.9,0.1,0.5" movable="false"> <body position="3.75,0.7,0" orientation="0,0,0" /> </box><box id="3" size="0.1,5.3999999999999995,0.5" movable="false"> <body position="0.8,3.4,0" orientation="0,0,0" /> </box><box id="4" size="5.9,0.1,0.5" movable="false"> <body position="3.75,6.1,0" orientation="0,0,0" /> </box><box id="5" size="0.1,1.5,0.5" movable="false"> <body position="6.7,6.85,0" orientation="0,0,0" /> </box><box id="6" size="5.9,0.1,0.5" movable="false"> <body position="3.75,7.6,0" orientation="0,0,0" /> </box><box id="7" size="0.1,6.200000000000001,0.5" movable="false"> <body position="0.8,10.7,0" orientation="0,0,0" /> </box><box id="8" size="1.6,0.1,0.5" movable="false"> <body position="0.0,13.8,0" orientation="0,0,0" /> </box><box id="9" size="0.1,6.200000000000001,0.5" movable="false"> <body position="-0.8,10.7,0" orientation="0,0,0" /> </box><box id="10" size="5.7,0.1,0.5" movable="false"> <body position="-3.65,7.6,0" orientation="0,0,0" /> </box><box id="11" size="0.1,1.5,0.5" movable="false"> <body position="-6.5,6.85,0" orientation="0,0,0" /> </box><box id="12" size="5.7,0.1,0.5" movable="false"> <body position="-3.65,6.1,0" orientation="0,0,0" /> </box><box id="13" size="0.1,5.3999999999999995,0.5" movable="false"> <body position="-0.8,3.4,0" orientation="0,0,0" /> </box><box id="14" size="5.7,0.1,0.5" movable="false"> <body position="-3.65,0.7,0" orientation="0,0,0" /> </box><box id="15" size="0.1,8.899999999999999,0.5" movable="false"> <body position="-6.5,-3.7499999999999996,0" orientation="0,0,0" /> </box><box id="16" size="10.2,0.1,0.5" movable="false"> <body position="0.10000000000000009,-6.7,0" orientation="0,0,0" /> </box><box id="17" size="0.1,5.9,0.5" movable="false"> <body position="5.2,-3.75,0" orientation="0,0,0" /> </box><box id="18" size="10.2,0.1,0.5" movable="false"> <body position="0.10000000000000009,-0.8,0" orientation="0,0,0" /> </box><box id="19" size="0.1,5.9,0.5" movable="false"> <body position="-5.0,-3.75,0" orientation="0,0,0" /> </box></arena>
+  <box id="0" size="13.2,0.1,0.5" movable="false"> <body position="0.10000000000000009,-8.2,0" orientation="0,0,0" /> </box><box id="1" size="0.1,8.899999999999999,0.5" movable="false"> <body position="6.7,-3.7499999999999996,0" orientation="0,0,0" /> </box><box id="2" size="6.0,0.1,0.5" movable="false"> <body position="3.7,0.7,0" orientation="0,0,0" /> </box><box id="3" size="0.1,5.3999999999999995,0.5" movable="false"> <body position="0.7,3.4,0" orientation="0,0,0" /> </box><box id="4" size="6.0,0.1,0.5" movable="false"> <body position="3.7,6.1,0" orientation="0,0,0" /> </box><box id="5" size="0.1,1.5,0.5" movable="false"> <body position="6.7,6.85,0" orientation="0,0,0" /> </box><box id="6" size="6.0,0.1,0.5" movable="false"> <body position="3.7,7.6,0" orientation="0,0,0" /> </box><box id="7" size="0.1,6.200000000000001,0.5" movable="false"> <body position="0.7,10.7,0" orientation="0,0,0" /> </box><box id="8" size="1.5,0.1,0.5" movable="false"> <body position="-0.050000000000000044,13.8,0" orientation="0,0,0" /> </box><box id="9" size="0.1,6.200000000000001,0.5" movable="false"> <body position="-0.8,10.7,0" orientation="0,0,0" /> </box><box id="10" size="5.7,0.1,0.5" movable="false"> <body position="-3.65,7.6,0" orientation="0,0,0" /> </box><box id="11" size="0.1,1.5,0.5" movable="false"> <body position="-6.5,6.85,0" orientation="0,0,0" /> </box><box id="12" size="5.7,0.1,0.5" movable="false"> <body position="-3.65,6.1,0" orientation="0,0,0" /> </box><box id="13" size="0.1,5.3999999999999995,0.5" movable="false"> <body position="-0.8,3.4,0" orientation="0,0,0" /> </box><box id="14" size="5.7,0.1,0.5" movable="false"> <body position="-3.65,0.7,0" orientation="0,0,0" /> </box><box id="15" size="0.1,8.899999999999999,0.5" movable="false"> <body position="-6.5,-3.7499999999999996,0" orientation="0,0,0" /> </box><box id="16" size="10.2,0.1,0.5" movable="false"> <body position="0.10000000000000009,-6.7,0" orientation="0,0,0" /> </box><box id="17" size="0.1,5.9,0.5" movable="false"> <body position="5.2,-3.75,0" orientation="0,0,0" /> </box><box id="18" size="10.2,0.1,0.5" movable="false"> <body position="0.10000000000000009,-0.8,0" orientation="0,0,0" /> </box><box id="19" size="0.1,5.9,0.5" movable="false"> <body position="-5.0,-3.75,0" orientation="0,0,0" /> </box></arena>
 
   
   

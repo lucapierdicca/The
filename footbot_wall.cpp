@@ -14,6 +14,7 @@ CFootBotWall::CFootBotWall() : // initializer list
    m_pcDistanceA(NULL),
    m_pcProximity(NULL),
    m_pcRangeAndBearingS(NULL),
+   m_pcRangeAndBearingA(NULL),
    m_pcPositioning(NULL),
    m_cAlpha(10.0f),
    m_fDelta(0.5f),
@@ -26,15 +27,18 @@ void CFootBotWall::Init(TConfigurationNode& t_node) {
    
    //Sensors & Actuators
    m_pcWheels     = GetActuator<CCI_DifferentialSteeringActuator>("differential_steering");
-   
    m_pcDistanceA  = GetActuator<CCI_FootBotDistanceScannerActuator>("footbot_distance_scanner");
    m_pcDistanceA->SetRPM(30.0);
+
+   m_pcRangeAndBearingA = GetActuator<CCI_RangeAndBearingActuator>("range_and_bearing");
+   size_t id = std::stoi(GetId().substr(3));
+   m_pcRangeAndBearingA->SetData(0,id);
+
    
    m_pcDistanceS  = GetSensor<CCI_FootBotDistanceScannerSensor>("footbot_distance_scanner");
    m_pcProximity  = GetSensor<CCI_FootBotProximitySensor>("footbot_proximity");
    m_pcRangeAndBearingS = GetSensor<CCI_RangeAndBearingSensor>("range_and_bearing");
    m_pcPositioning = GetSensor<CCI_PositioningSensor>("positioning");
-
 
    
    //Parse the configuration file
@@ -44,6 +48,8 @@ void CFootBotWall::Init(TConfigurationNode& t_node) {
    GetNodeAttributeOrDefault(t_node, "velocity", m_fWheelVelocity, m_fWheelVelocity);
    GetNodeAttributeOrDefault(t_node, "file_name", file_name, file_name);
    GetNodeAttributeOrDefault(t_node, "collect_data", collect_data, collect_data);
+
+   file.open(file_name+GetId().c_str()+".csv", std::ios_base::app);
 
    
    R.angle_interval = {-CRadians::PI, CRadians::ZERO};
@@ -382,7 +388,7 @@ void CFootBotWall::ControlStep() {
    const CCI_PositioningSensor::SReading& robot_state = m_pcPositioning->GetReading();
    const CCI_FootBotProximitySensor::TReadings& proximity_readings = m_pcProximity->GetReadings();
 
-   
+
    // add the current step readings in the map world_model_long (it starts empty then it grows then it stops)
    Real mod_distance;
    CVector2 rab_xy, shift_xy;
@@ -430,7 +436,6 @@ void CFootBotWall::ControlStep() {
       }
    }
 
-
    processReadings('H');
 
    tic++;
@@ -457,7 +462,8 @@ void CFootBotWall::ControlStep() {
    //fprintf(stderr, "%s -- %f - %f \n", GetId().c_str(), input[0], input[1]);
 
    // set the inputs
-   m_pcWheels->SetLinearVelocity(input[0]-input[1]*L/2, input[0]+input[1]*L/2);
+   m_pcWheels->SetLinearVelocity(input[0]-input[1]*L/2,
+                                 input[0]+input[1]*L/2);
 
    this->zone_old = zone;
    
@@ -465,6 +471,12 @@ void CFootBotWall::ControlStep() {
    // store step_data in step_data_dataset
    CRadians x,y,theta;
    robot_state.Orientation.ToEulerAngles(theta,y,x);
+    std::string rr_concatenated_string = "";
+    for (auto rr: rab_readings){
+        rr_concatenated_string += std::to_string(rr.Range) + "_";
+        rr_concatenated_string += std::to_string(rr.HorizontalBearing.GetValue()) + "_";
+        rr_concatenated_string += std::to_string(rr.Data[0]) + "_";
+    }
 
    if (collect_data == true) {
 
@@ -476,13 +488,11 @@ void CFootBotWall::ControlStep() {
                                     input[0],
                                     input[1],
                                     world_model_long,
-                                    world_model_short});
+                                    world_model_short,
+                                    rr_concatenated_string});
 
        //dump the dataset into a .csv
        if (tic % 100 == 0) {
-
-           std::ofstream file;
-           file.open(file_name, std::ios_base::app);
            for (auto step: dataset_step_data) {
 
                if (step.long_readings.size() == 120 && step.short_readings.size() == 120) {
@@ -507,15 +517,17 @@ void CFootBotWall::ControlStep() {
                        row += std::to_string(angle_data.occluded) + "|";
                    }
 
+                   row += step.rab_concatenated_into_a_string;
                    row += "\n";
 
                    file << row;
                }
            }
-
-           file.close();
-
            dataset_step_data.clear();
+       }
+
+       if(tic == 10000){
+           file.close();
        }
    }
 

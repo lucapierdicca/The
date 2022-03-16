@@ -49,12 +49,14 @@ def produce_test_metrics(classifier_type,
 
 
     #testing loop (fake navigation simulation from argos collected data)
+    robot_ids = []
     for r in n_robots:
         exp_metrics = []
         print(f"Robots: {r}")
         exps = [_ for _ in os.listdir(f"data/test/{r}/") if ".csv" in _]
         for exp in exps:
             id = random.choice(range(r))
+            robot_ids.append(id)
             # fb_id = f"fb_{id}"
             test = load_dataset(f"data/test/{r}/{exp}",
                                "data/test/test_map_ground_truth.pickle",
@@ -73,15 +75,13 @@ def produce_test_metrics(classifier_type,
                     if handle_occlusion == True:
                         valid = False
                         occlusion_ratio = occlusion_data.count(True)/len(occlusion_data)
-                        if(occlusion_ratio < 0.5):
+                        if(occlusion_ratio < 0.7):
                             z = filter.classifier.preProcess(step['world_model_long'], 3)
                             feature = filter.extractFeature(z, handle_occlusion=handle_occlusion)
                             feature_std = filter.scaler.transform([feature])  # standardize
-                            belief = filter.update(belief, feature_std[0], occlusion_ratio, log=True)
+                            belief = filter.update(belief, feature_std[0], weight=None, log=True)
                             prediction = filter.predict(belief)
                             valid = True
-                        else:
-                            print(f"INVALID {prediction}")
 
                     else:
                         z = filter.classifier.preProcess(step['world_model_long'], 3)
@@ -117,14 +117,18 @@ def produce_test_metrics(classifier_type,
         with open(file_name, 'wb') as f:
             pickle.dump(exp_metrics, f)
 
+        print(robot_ids)
+
 
 if __name__ == '__main__':
     classifier_type = ["linear"]  # ["linear", "quadratic"]
     feature_type = ["geometricB"]  # ["template", "geometricP", "geometricB"]
-    n_robots = [1]
-    load_model = False
-    handle_occlusion = False
+    n_robots = [20]
+    load_model = True
+    handle_occlusion = True
     unique = True
+
+    random.seed(3215)
 
     for c in classifier_type:
         for f in feature_type:
