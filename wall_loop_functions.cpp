@@ -22,10 +22,10 @@ void CWallLoopFunctions::Init(TConfigurationNode& t_tree){
 //        AddEntity(*pcFB);
 //    }
 
-    for(int i=0;i<20;i++){
-        pcFB = new CFootBotEntity("fb_"+std::to_string(i), "fwc", CVector3(0.3,i/3.0,0), CQuaternion(CRadians::PI_OVER_TWO, CVector3(0,0,1)));
-        AddEntity(*pcFB);
-    }
+//    for(int i=0;i<1;i++){
+//        pcFB = new CFootBotEntity("fb_"+std::to_string(i), "fwc", CVector3(0.3,i/3.0,0), CQuaternion(CRadians::PI_OVER_TWO, CVector3(0,0,1)));
+//        AddEntity(*pcFB);
+//    }
     
 //    pcFB = new CFootBotEntity("fb_0", "fwc", CVector3(1.3,0,0), CQuaternion(CRadians::PI, CVector3(0,0,1)));
 //    AddEntity(*pcFB);

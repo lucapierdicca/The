@@ -1,0 +1,207 @@
+<?xml version="1.0" ?>
+<argos-configuration>
+
+
+
+  <!-- ************************* -->
+  <!-- * General configuration * -->
+  <!-- ************************* -->
+  <framework>
+
+    <system threads="8" />
+
+    <experiment length="1000"
+                ticks_per_second="10"
+                random_seed="1" />
+  </framework>
+
+
+
+  <!-- *************** -->
+  <!-- * Controllers * -->
+  <!-- *************** -->
+  <controllers>
+
+    <footbot_wall_controller id="fwc" library="build/libfootbot_wall">
+      <actuators>
+        <differential_steering implementation="default" />
+        <footbot_distance_scanner implementation="default" />
+      </actuators>
+
+      <sensors>
+        <footbot_distance_scanner implementation="rot_z_only" show_rays="false" />
+        <footbot_proximity implementation="default" show_rays="false" />
+        <range_and_bearing implementation="medium" medium="rab" />
+        <positioning implementation="default" />
+      </sensors>
+
+      <params alpha="100" delta="0.1" velocity="5" file_name="01_test_1.csv" />
+    </footbot_wall_controller>
+
+  </controllers>
+
+  <!-- ****************** -->
+  <!-- * Loop functions * -->
+  <!-- ****************** -->
+  <loop_functions library="build/libwall_loop_functions"
+                  label="wall_loop_functions" />
+
+
+  <!-- *********************** -->
+  <!-- * Arena configuration * -->
+  <!-- *********************** -->
+
+  <arena size="12, 20, 1" center="0,0,0.5">
+
+    <!-- Walls -->
+
+<!--    <box id="0" size="4,0.1,0.5" movable="false">
+      <body position="0.0,-2,0" orientation="0,0,0" />
+    </box>
+    <box id="1" size="4,0.1,0.5" movable="false">
+      <body position="2,0.0,0" orientation="90,0,0" />
+    </box>
+    <box id="2" size="4,0.1,0.5" movable="false">
+      <body position="0.0,2,0" orientation="0,0,0" />
+    </box>
+    <box id="3" size="4,0.1,0.5" movable="false">
+      <body position="-2,0.0,0" orientation="-90,0,0" />
+    </box> -->
+
+
+
+    <box id="0" size="8,0.1,0.5" movable="false">
+      <body position="0.0,9,0" orientation="0,0,0" />
+    </box>
+    <box id="1" size="0.1,1.5,0.5" movable="false">
+      <body position="4,8.25,0" orientation="0,0,0" />
+    </box>
+    <box id="2" size="0.1,1.5,0.5" movable="false">
+      <body position="-4,8.25,0" orientation="0,0,0" />
+    </box>
+    <box id="3" size="3.25,0.1,0.5" movable="false">
+      <body position="2.375,7.5,0" orientation="0,0,0" />
+    </box>
+    <box id="4" size="3.25,0.1,0.5" movable="false">
+      <body position="-2.375,7.5,0" orientation="0,0,0" />
+    </box>
+    <box id="5" size="0.1,4,0.5" movable="false">
+      <body position="0.75,5.5,0" orientation="0,0,0" />
+    </box>
+    <box id="6" size="0.1,4,0.5" movable="false">
+      <body position="-0.75,5.5,0" orientation="0,0,0" />
+    </box>
+
+    <box id="7" size="3.25,0.1,0.5" movable="false">
+      <body position="2.375,3.5,0" orientation="0,0,0" />
+    </box>
+    <box id="8" size="3.25,0.1,0.5" movable="false">
+      <body position="-2.375,3.5,0" orientation="0,0,0" />
+    </box>
+    <box id="9" size="0.1,1.5,0.5" movable="false">
+      <body position="4,2.75,0" orientation="0,0,0" />
+    </box>
+    <box id="10" size="0.1,1.5,0.5" movable="false">
+      <body position="-4,2.75,0" orientation="0,0,0" />
+    </box>
+    <box id="11" size="3.25,0.1,0.5" movable="false">
+      <body position="2.375,2,0" orientation="0,0,0" />
+    </box>
+    <box id="12" size="3.25,0.1,0.5" movable="false">
+      <body position="-2.375,2,0" orientation="0,0,0" />
+    </box>
+
+    <box id="13" size="0.1,4,0.5" movable="false">
+      <body position="0.75,0,0" orientation="0,0,0" />
+    </box>
+    <box id="14" size="0.1,4,0.5" movable="false">
+      <body position="-0.75,0,0" orientation="0,0,0" />
+    </box>
+
+    <box id="15" size="1.5,0.1,0.5" movable="false">
+      <body position="0,-2,0" orientation="0,0,0" />
+    </box>
+
+    
+
+    <!-- Robots -->
+<!--     <distribute>
+      <position method="uniform" min="-3.5,8,0" max="3.5,8.5,0" />
+      <orientation method="gaussian" mean="122,0,0" std_dev="360,0,0" />
+      <entity quantity="10" max_trials="100" base_num="0">
+        <foot-bot id="fb_2">
+          <controller config="fwc" />
+        </foot-bot>
+      </entity>
+    </distribute> -->
+
+
+     <distribute>
+      <position method="uniform" min="-0.5,-4,0" max="0.5,5.5,0" />
+      <orientation method="gaussian" mean="0,0,0" std_dev="360,0,0" />
+      <entity quantity="1" max_trials="100" base_num="0">
+        <foot-bot id="fb_">
+          <controller config="fwc" />
+        </foot-bot>
+      </entity>
+    </distribute>
+
+
+<!--     <distribute>
+      <position method="uniform" min="-3.5,2.5,0" max="3.5,3,0" />
+      <orientation method="gaussian" mean="122,0,0" std_dev="360,0,0" />
+      <entity quantity="10" max_trials="100" base_num="0">
+        <foot-bot id="fb_3">
+          <controller config="fwc" />
+        </foot-bot>
+      </entity>
+    </distribute> -->
+
+
+<!--     <foot-bot id="fb_0">
+      <body position="0.2,-1,0" orientation="90,0,0" />
+      <controller config="fwc"/>
+    </foot-bot>
+
+    <foot-bot id="fb_1">
+      <body position="0.1,-1.3,0" orientation="90,0,0" />
+      <controller config="fwc"/>
+    </foot-bot> -->
+
+
+  </arena>
+
+  <!-- ******************* -->
+  <!-- * Physics engines * -->
+  <!-- ******************* -->
+
+  <physics_engines>
+    <!--
+        Use a 2D dynamics engine.
+    -->
+    <dynamics2d id="dyn2d" />
+  </physics_engines>
+
+  <!-- ********* -->
+  <!-- * Media * -->
+  <!-- ********* -->
+  <media>
+    <range_and_bearing id="rab" />
+  </media>
+
+  <!-- ****************** -->
+  <!-- * Visualization * -->
+  <!-- ****************** -->
+
+  <visualization>
+<!--    <qt-opengl>
+      <user_functions library="build/libwall_loop_functions"
+                      label="wall_qt_user_functions" />
+      <camera>
+        <placements>
+          <placement index="0" position="0,0,30" look_at="0,0,0" up="0,1,0" lens_focal_length="65" />
+        </placements>
+      </camera>
+    </qt-opengl>-->
+  </visualization>
+</argos-configuration>

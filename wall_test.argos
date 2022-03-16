@@ -1,0 +1,100 @@
+<argos-configuration>
+
+
+
+  
+  
+  
+  <framework>
+
+    <system threads="1" />
+
+    <experiment length="1000" ticks_per_second="10" random_seed="858" />
+  </framework>
+
+
+
+  
+  
+  
+  <controllers>
+
+    <footbot_wall_controller id="fwc" library="build/libfootbot_wall">
+      <actuators>
+        <differential_steering implementation="default" />
+        <footbot_distance_scanner implementation="default" />
+      </actuators>
+
+      <sensors>
+        <footbot_distance_scanner implementation="rot_z_only" show_rays="false" />
+        <footbot_proximity implementation="default" show_rays="false" />
+        <range_and_bearing implementation="medium" medium="rab" />
+        <positioning implementation="default" />
+      </sensors>
+
+      <params alpha="100" delta="0.1" velocity="5" file_name="data/test/30/30_30_858_data.csv" collect_data="true" />
+    </footbot_wall_controller>
+
+  </controllers>
+
+  
+  
+  
+  <loop_functions library="build/libwall_loop_functions" label="wall_loop_functions" />
+
+
+  
+  
+  
+
+  <arena size="12, 20, 1" center="0,0,0.5">
+
+    
+
+
+
+
+
+    <distribute>
+      <position method="uniform" min="-0.5,-4,0" max="0.5,5.5,0" />
+      <orientation method="gaussian" mean="0,0,0" std_dev="360,0,0" />
+      <entity quantity="30" max_trials="100" base_num="0">
+        <foot-bot id="fb_">
+          <controller config="fwc" />
+        </foot-bot>
+      </entity>
+    </distribute>
+
+
+
+
+
+
+
+
+  <box id="0" size="0.1,4.0,0.5" movable="false"> <body position="-0.8,-2.8,0" orientation="0,0,0" /> </box><box id="1" size="3.2,0.1,0.5" movable="false"> <body position="-2.4,-0.8,0" orientation="0,0,0" /> </box><box id="2" size="0.1,1.5,0.5" movable="false"> <body position="-4.0,-0.050000000000000044,0" orientation="0,0,0" /> </box><box id="3" size="3.2,0.1,0.5" movable="false"> <body position="-2.4,0.7,0" orientation="0,0,0" /> </box><box id="4" size="0.1,4.0,0.5" movable="false"> <body position="-0.8,2.7,0" orientation="0,0,0" /> </box><box id="5" size="3.2,0.1,0.5" movable="false"> <body position="-2.4,4.7,0" orientation="0,0,0" /> </box><box id="6" size="0.1,1.5,0.5" movable="false"> <body position="-4.0,5.45,0" orientation="0,0,0" /> </box><box id="7" size="9.5,0.1,0.5" movable="false"> <body position="0.75,6.2,0" orientation="0,0,0" /> </box><box id="8" size="0.1,7.0,0.5" movable="false"> <body position="5.5,2.7,0" orientation="0,0,0" /> </box><box id="9" size="4.7,0.1,0.5" movable="false"> <body position="3.15,-0.8,0" orientation="0,0,0" /> </box><box id="10" size="0.1,4.0,0.5" movable="false"> <body position="0.8,-2.8,0" orientation="0,0,0" /> </box><box id="11" size="1.6,0.1,0.5" movable="false"> <body position="0.0,-4.8,0" orientation="0,0,0" /> </box><box id="12" size="0.1,4.0,0.5" movable="false"> <body position="0.8,2.7,0" orientation="0,0,0" /> </box><box id="13" size="3.2,0.1,0.5" movable="false"> <body position="2.4,4.7,0" orientation="0,0,0" /> </box><box id="14" size="0.1,4.0,0.5" movable="false"> <body position="4.0,2.7,0" orientation="0,0,0" /> </box><box id="15" size="3.2,0.1,0.5" movable="false"> <body position="2.4,0.7,0" orientation="0,0,0" /> </box></arena>
+
+  
+  
+  
+
+  <physics_engines>
+    
+    <dynamics2d id="dyn2d" />
+  </physics_engines>
+
+  
+  
+  
+  <media>
+    <range_and_bearing id="rab" />
+  </media>
+
+  
+  
+  
+
+  <visualization>
+
+  </visualization>
+</argos-configuration>

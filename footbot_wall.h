@@ -48,6 +48,8 @@ private:
    Real m_fDelta;
    Real m_fWheelVelocity;
    CRange<CRadians> m_cGoStraightAngleRange;
+   std::string file_name;
+   bool collect_data;
 
 
    CRadians chosen_direction;
@@ -80,6 +82,7 @@ public:
 
    struct step_data{
       int clock;
+      std::string Id;
       Real x;
       Real y;
       Real theta;
@@ -108,11 +111,13 @@ public:
    std::array<int,4> extractFeatures();
    Real EucDistance(std::array<int,4> u, std::array<int,4> v);
    char predict(std::array<int,4> features);
-   std::array<Real,2> StructuredExploration(
-   const CCI_RangeAndBearingSensor::TReadings& rab_readings,
-   std::map<CRadians, struct angle_data> world_model_long,
-   char zone,
-   const CCI_PositioningSensor::SReading& robot_state);
+    std::array<Real,2> StructuredExploration(
+            const CCI_RangeAndBearingSensor::TReadings& rab_readings,
+            std::map<CRadians, struct angle_data> world_model_long,
+            char zone,
+            const CCI_PositioningSensor::SReading& robot_state);
+
+    std::array<Real,2> UnstructuredExploration(const CCI_FootBotProximitySensor::TReadings& proximity_readings);
    
 
    /* Class constructor. */

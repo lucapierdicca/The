@@ -42,6 +42,8 @@ void CFootBotWall::Init(TConfigurationNode& t_node) {
    m_cGoStraightAngleRange.Set(-ToRadians(m_cAlpha), ToRadians(m_cAlpha));
    GetNodeAttributeOrDefault(t_node, "delta", m_fDelta, m_fDelta);
    GetNodeAttributeOrDefault(t_node, "velocity", m_fWheelVelocity, m_fWheelVelocity);
+   GetNodeAttributeOrDefault(t_node, "file_name", file_name, file_name);
+   GetNodeAttributeOrDefault(t_node, "collect_data", collect_data, collect_data);
 
    
    R.angle_interval = {-CRadians::PI, CRadians::ZERO};
@@ -167,7 +169,6 @@ void CFootBotWall::processReadings(char sector_lbl){
 }
 
 
-
 std::pair<CRadians,Real> CFootBotWall::getMinReading(char sector_lbl){
    Real distance;
    std::pair <CRadians, Real> min_reading (0,150);
@@ -237,7 +238,6 @@ std::array<int,4> CFootBotWall::extractFeatures(){
       
 }
 
-
 char CFootBotWall::predict(std::array<int,4> feature){
    
    char class_label = ' ';
@@ -256,6 +256,76 @@ char CFootBotWall::predict(std::array<int,4> feature){
    return class_label;
 }
 
+
+std::array<Real,2> CFootBotWall::UnstructuredExploration(const CCI_FootBotProximitySensor::TReadings& proximity_readings){
+
+    Real v,w;
+    CVector2 cAccumulator;
+
+    for(int i = 0; i < proximity_readings.size(); ++i)
+        cAccumulator += CVector2(proximity_readings[i].Value, proximity_readings[i].Angle);
+
+    cAccumulator /= proximity_readings.size();
+
+    if (cAccumulator.Length() == 0.0){
+        if(tic % 30 == 0 || chosen){
+
+            if (!chosen){
+                std::random_device rd;
+                std::default_random_engine eng(rd());
+                std::uniform_real_distribution<float> distr(0, 1);
+
+                if (distr(eng) >= 0.5)
+                    choice = 0;
+                else
+                    choice = 1;
+
+                chosen = true;
+            }
+
+            if (counter < 10){
+                if (choice == 0){
+                    v = 0.0;
+                    w = -0.28;
+                }
+                else{
+                    v = 0.0;
+                    w = 0.28;
+                }
+                counter++;
+            }
+
+            else{
+                counter = 0;
+                chosen = false;
+            }
+
+        }
+        else{
+            v = 5.0;
+            w = 0.0;
+        }
+    }
+    else{
+        if(m_cGoStraightAngleRange.WithinMinBoundIncludedMaxBoundIncluded(cAccumulator.Angle())) {
+            if(cAccumulator.Angle().GetValue() > 0.0f) {
+                v = 1.0;
+                w = -0.14;
+            }
+            else {
+                v = 1.0;
+                w = 0.14;
+            }
+        }
+        else{
+            v = 5.0;
+            w = 0.0;
+        }
+    }
+
+
+    return {v, w};
+}
 
 std::array<Real,2> CFootBotWall::StructuredExploration(
    const CCI_RangeAndBearingSensor::TReadings& rab_readings,
@@ -379,7 +449,8 @@ void CFootBotWall::ControlStep() {
    // compute the inputs
    //auto input = ObstacleAvoidance(rab_readings);
    //auto input = WallFollowing(world_model_long);
-   auto input = StructuredExploration(rab_readings, world_model_long, zone, robot_state);
+   //auto input = StructuredExploration(rab_readings, world_model_long, zone, robot_state);
+   auto input = UnstructuredExploration(proximity_readings);
 
    //input[1] = 0.0;
 
@@ -395,56 +466,57 @@ void CFootBotWall::ControlStep() {
    CRadians x,y,theta;
    robot_state.Orientation.ToEulerAngles(theta,y,x);
 
-   if(GetId() == "fb_0"){
-      dataset_step_data.push_back({tic,
-                                   robot_state.Position.GetX(),
-                                   robot_state.Position.GetY(),
-                                   theta.GetValue(),
-                                   input[0],
-                                   input[1],
-                                   world_model_long,
-                                   world_model_short});
-   }
+   if (collect_data == true) {
 
+       dataset_step_data.push_back({tic,
+                                    GetId(),
+                                    robot_state.Position.GetX(),
+                                    robot_state.Position.GetY(),
+                                    theta.GetValue(),
+                                    input[0],
+                                    input[1],
+                                    world_model_long,
+                                    world_model_short});
 
+       //dump the dataset into a .csv
+       if (tic % 100 == 0) {
 
-   //dump the dataset into a .csv
-   if(tic%100 == 0 && GetId() == "fb_0"){
+           std::ofstream file;
+           file.open(file_name, std::ios_base::app);
+           for (auto step: dataset_step_data) {
 
-      //std::cout << "DUMPED\n";
-      
-      std::ofstream file;
-      file.open("test_unstructured_1.csv", std::ios_base::app);
-      for(auto step : dataset_step_data){
+               if (step.long_readings.size() == 120 && step.short_readings.size() == 120) {
+                   std::string row = "";
+                   row += std::to_string(step.clock) + "|";
+                   row += step.Id + "|";
+                   row += std::to_string(step.x) + "|";
+                   row += std::to_string(step.y) + "|";
+                   row += std::to_string(step.theta) + "|";
+                   row += std::to_string(step.v_left) + "|";
+                   row += std::to_string(step.v_right) + "|";
 
-         if (step.long_readings.size() == 120 && step.short_readings.size() == 120){
-            std::string row = "";
-            row += std::to_string(step.clock)+"|";
-            row += std::to_string(step.x)+"|";
-            row += std::to_string(step.y)+"|";
-            row += std::to_string(step.theta)+"|";
-            row += std::to_string(step.v_left)+"|";
-            row += std::to_string(step.v_right)+"|";
+                   for (const auto&[angle, angle_data]: step.long_readings) {
+                       row += std::to_string(angle_data.angle.GetValue()) + "|";
+                       row += std::to_string(angle_data.distance) + "|";
+                       row += std::to_string(angle_data.occluded) + "|";
+                   }
 
-            for(const auto& [angle, angle_data] : step.long_readings){
-               row += std::to_string(angle_data.angle.GetValue())+"|";
-               row += std::to_string(angle_data.distance)+"|";
-            }
+                   for (const auto&[angle, angle_data]: step.short_readings) {
+                       row += std::to_string(angle_data.angle.GetValue()) + "|";
+                       row += std::to_string(angle_data.distance) + "|";
+                       row += std::to_string(angle_data.occluded) + "|";
+                   }
 
-            for(const auto& [angle, angle_data] : step.short_readings){
-               row += std::to_string(angle_data.angle.GetValue())+"|";
-               row += std::to_string(angle_data.distance)+"|";
-            }
+                   row += "\n";
 
-            row += "\n";
+                   file << row;
+               }
+           }
 
-            //file << row;
-         }
-      }
+           file.close();
 
-      file.close();
-
-      dataset_step_data.clear();
+           dataset_step_data.clear();
+       }
    }
 
 }
